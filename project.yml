@@ -13,7 +13,7 @@ settings:
     SWIFT_VERSION: "5.9"
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "LB2RAFK9K9"
     SWIFT_STRICT_CONCURRENCY: minimal
 
 configs:
@@ -45,11 +45,7 @@ targets:
         INFOPLIST_KEY_NSCalendarsUsageDescription: "HejmadiWeek bruger din kalender til at vise og oprette begivenheder."
         INFOPLIST_KEY_NSRemindersUsageDescription: "HejmadiWeek bruger påmindelser til at integrere to-do opgaver."
         ENABLE_PREVIEWS: true
-      configs:
-        Debug:
-          CODE_SIGN_IDENTITY: "-"
-        Release:
-          CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Automatic
     entitlements:
       path: HejmadiWeek.entitlements
       properties:
