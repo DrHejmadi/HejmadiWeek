@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HejmadiWeek - Smart Kalender</title>
+    <style>
+        :root {
+            --accent: #4A90D9;
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --text: #f0f0f0;
+            --muted: #888;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .hero {
+            text-align: center;
+            padding: 100px 20px 60px;
+            background: linear-gradient(180deg, #1a2a3a 0%, var(--bg) 100%);
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .badge:hover { opacity: 0.85; }
+        .features {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid #2a2a2a;
+        }
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        .card .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .card p { color: var(--muted); font-size: 0.95rem; }
+        .platforms {
+            text-align: center;
+            padding: 40px 20px 80px;
+        }
+        .platforms h2 {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+        .platforms p { color: var(--muted); }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--muted);
+            font-size: 0.85rem;
+            border-top: 1px solid #222;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Hejmadi<span>Week</span></h1>
+        <p>Den smarte familiekalender med månedsoverblik, heatmap, to-do integration og CloudKit sync.</p>
+        <a class="badge" href="https://testflight.apple.com/join/">Prøv via TestFlight</a>
+    </div>
+
+    <div class="features">
+        <div class="card">
+            <div class="icon">📅</div>
+            <h3>Månedsoverblik</h3>
+            <p>Se hele måneden med farvekodede heatmaps der viser travle dage. Tryk på en dag for "day peek" forstørret visning.</p>
+        </div>
+        <div class="card">
+            <div class="icon">👨‍👩‍👧‍👦</div>
+            <h3>4 Kalendere</h3>
+            <p>Personlig, Par, Madplan og Børn — hver med sin farve og ikon, delbar med familien.</p>
+        </div>
+        <div class="card">
+            <div class="icon">✅</div>
+            <h3>Integreret To-Do</h3>
+            <p>To-do-opgaver sorteret efter deadline. Link direkte til kalenderbegivenheder. Del med andre.</p>
+        </div>
+        <div class="card">
+            <div class="icon">🔄</div>
+            <h3>CloudKit Sync</h3>
+            <p>Automatisk synkronisering på tværs af alle dine Apple-enheder via iCloud.</p>
+        </div>
+        <div class="card">
+            <div class="icon">⌨️</div>
+            <h3>Hurtig Tilføjelse</h3>
+            <p>Skriv "Tandlæge fredag kl 14" — appen forstår det og opretter begivenheden.</p>
+        </div>
+        <div class="card">
+            <div class="icon">📊</div>
+            <h3>Uge & Agenda</h3>
+            <p>Skift mellem måned, uge-tidslinje og agenda-visning efter behov.</p>
+        </div>
+    </div>
+
+    <div class="platforms">
+        <h2>iPhone · iPad · Mac</h2>
+        <p>Bygget med SwiftUI til alle Apple-platforme. Én app, alle enheder.</p>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 Hejmadi. Bygget med SwiftUI og SwiftData.
+    </div>
+</body>
+</html>
