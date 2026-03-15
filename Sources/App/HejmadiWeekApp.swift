@@ -27,7 +27,29 @@ struct HejmadiWeekApp: App {
                 CalendarCategory.seedDefaults(in: context)
             }
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Fallback without CloudKit
+            do {
+                let schema = Schema([
+                    CalendarCategory.self,
+                    CalendarEvent.self,
+                    TodoItem.self
+                ])
+                let fallbackConfig = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false
+                )
+                modelContainer = try ModelContainer(for: schema, configurations: [fallbackConfig])
+
+                let context = modelContainer.mainContext
+                let descriptor = FetchDescriptor<CalendarCategory>()
+                let count = (try? context.fetchCount(descriptor)) ?? 0
+                if count == 0 {
+                    CalendarCategory.seedDefaults(in: context)
+                }
+                return
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
         }
     }
 

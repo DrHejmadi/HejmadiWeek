@@ -1,32 +1,37 @@
 import Foundation
 
 extension Date {
+    private static var mondayCalendar: Calendar {
+        var cal = Calendar.current
+        cal.firstWeekday = 2 // Monday
+        return cal
+    }
+
     var startOfDay: Date {
         Calendar.current.startOfDay(for: self)
     }
 
     var endOfDay: Date {
-        Calendar.current.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay)!
+        Calendar.current.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay) ?? self
     }
 
     var startOfMonth: Date {
         let components = Calendar.current.dateComponents([.year, .month], from: self)
-        return Calendar.current.date(from: components)!
+        return Calendar.current.date(from: components) ?? self
     }
 
     var endOfMonth: Date {
-        Calendar.current.date(byAdding: DateComponents(month: 1, second: -1), to: startOfMonth)!
+        Calendar.current.date(byAdding: DateComponents(month: 1, second: -1), to: startOfMonth) ?? self
     }
 
     var startOfWeek: Date {
-        var cal = Calendar.current
-        cal.firstWeekday = 2 // Monday
+        let cal = Date.mondayCalendar
         let components = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: self)
-        return cal.date(from: components)!
+        return cal.date(from: components) ?? self
     }
 
     var weekNumber: Int {
-        Calendar.current.component(.weekOfYear, from: self)
+        Date.mondayCalendar.component(.weekOfYear, from: self)
     }
 
     var dayOfMonth: Int {
@@ -54,7 +59,7 @@ extension Date {
     }
 
     func daysInMonth() -> [Date] {
-        let range = Calendar.current.range(of: .day, in: .month, for: self)!
+        guard let range = Calendar.current.range(of: .day, in: .month, for: self) else { return [] }
         return range.compactMap { day -> Date? in
             var components = Calendar.current.dateComponents([.year, .month], from: self)
             components.day = day
@@ -63,8 +68,7 @@ extension Date {
     }
 
     func monthGridDates() -> [Date] {
-        var cal = Calendar.current
-        cal.firstWeekday = 2 // Monday
+        let cal = Date.mondayCalendar
         let firstOfMonth = self.startOfMonth
         let firstWeekday = cal.component(.weekday, from: firstOfMonth)
         let offset = (firstWeekday - cal.firstWeekday + 7) % 7
@@ -75,16 +79,18 @@ extension Date {
                 dates.append(date)
             }
         }
-        // Trim to show 5 or 6 weeks as needed
-        while dates.count > 35 {
-            if let last = dates.last,
-               Calendar.current.component(.month, from: last) != Calendar.current.component(.month, from: firstOfMonth),
-               dates.count > 35 {
-                // Keep 42 dates (6 weeks) if the month needs it
-                break
+
+        // Trim to 35 (5 weeks) if last row is entirely next month
+        if dates.count == 42 {
+            let lastWeek = Array(dates[35..<42])
+            let allNextMonth = lastWeek.allSatisfy {
+                !Calendar.current.isDate($0, equalTo: firstOfMonth, toGranularity: .month)
             }
-            break
+            if allNextMonth {
+                dates = Array(dates[0..<35])
+            }
         }
+
         return dates
     }
 

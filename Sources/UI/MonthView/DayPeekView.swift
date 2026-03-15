@@ -5,6 +5,7 @@ struct DayPeekView: View {
     let events: [CalendarEvent]
     let onClose: () -> Void
     let onAddEvent: () -> Void
+    let onEditEvent: (CalendarEvent) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -62,6 +63,8 @@ struct DayPeekView: View {
                     LazyVStack(spacing: 6) {
                         ForEach(sortedEvents, id: \.id) { event in
                             DayPeekEventRow(event: event)
+                                .contentShape(Rectangle())
+                                .onTapGesture { onEditEvent(event) }
                         }
                     }
                     .padding(.horizontal)
@@ -124,6 +127,10 @@ struct DayPeekEventRow: View {
             }
 
             Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
 
             if let category = event.category {
                 Image(systemName: category.iconName)

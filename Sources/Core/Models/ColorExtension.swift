@@ -36,7 +36,10 @@ extension Color {
         #else
         let nsColor = NSColor(self)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        nsColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        guard let rgbColor = nsColor.usingColorSpace(.sRGB) else {
+            return "#0000FF" // fallback blue
+        }
+        rgbColor.getRed(&r, green: &g, blue: &b, alpha: &a)
         #endif
         return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
     }

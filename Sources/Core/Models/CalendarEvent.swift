@@ -55,7 +55,7 @@ final class CalendarEvent {
     }
 
     var durationMinutes: Int {
-        Int(endDate.timeIntervalSince(startDate) / 60)
+        max(0, Int(endDate.timeIntervalSince(startDate) / 60))
     }
 
     var spansMultipleDays: Bool {

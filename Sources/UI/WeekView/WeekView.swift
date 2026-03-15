@@ -8,16 +8,26 @@ struct WeekView: View {
     @State private var currentWeekStart = Date().startOfWeek
     @State private var showEventEditor = false
     @State private var selectedDate = Date()
+    @State private var editingEvent: CalendarEvent?
 
-    private let hours = Array(6...22)
+    private let hours = Array(0...23)
+    private let hourHeight: CGFloat = 60
 
     var body: some View {
         VStack(spacing: 0) {
             weekHeader
             weekDayStrip
+            allDaySection
 
-            ScrollView {
-                timeGrid
+            ScrollViewReader { proxy in
+                ScrollView {
+                    timeGrid
+                        .id("timeGrid")
+                }
+                .onAppear {
+                    // Scroll to 7 AM on appear
+                    proxy.scrollTo(7, anchor: .top)
+                }
             }
         }
         .gesture(
@@ -32,6 +42,9 @@ struct WeekView: View {
         )
         .sheet(isPresented: $showEventEditor) {
             EventEditorView(initialDate: selectedDate)
+        }
+        .sheet(item: $editingEvent) { event in
+            EventEditorView(initialDate: event.startDate, existingEvent: event)
         }
     }
 
@@ -90,9 +103,58 @@ struct WeekView: View {
                         }
                 }
                 .frame(maxWidth: .infinity)
+                .onTapGesture {
+                    selectedDate = date
+                    showEventEditor = true
+                }
             }
         }
         .padding(.bottom, 4)
+    }
+
+    // MARK: - All Day Section
+
+    private var allDaySection: some View {
+        let allDayEvents = weekDates.flatMap { date in
+            eventsFor(date: date).filter { $0.isAllDay }
+        }
+        let uniqueEvents = Array(Set(allDayEvents.map { $0.id }))
+            .compactMap { id in allDayEvents.first { $0.id == id } }
+
+        return Group {
+            if !uniqueEvents.isEmpty {
+                VStack(spacing: 2) {
+                    HStack(spacing: 0) {
+                        Text("Hel dag")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, alignment: .trailing)
+                            .padding(.trailing, 4)
+
+                        ForEach(weekDates, id: \.self) { date in
+                            let dayAllDay = eventsFor(date: date).filter { $0.isAllDay }
+                            VStack(spacing: 1) {
+                                ForEach(dayAllDay, id: \.id) { event in
+                                    Text(event.title)
+                                        .font(.system(size: 9, weight: .medium))
+                                        .lineLimit(1)
+                                        .padding(.horizontal, 2)
+                                        .padding(.vertical, 1)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(event.category?.color.opacity(0.2) ?? Color.blue.opacity(0.2))
+                                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                                        .onTapGesture { editingEvent = event }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+
+                    Divider()
+                }
+            }
+        }
     }
 
     // MARK: - Time Grid
@@ -114,7 +176,8 @@ struct WeekView: View {
                             .frame(height: 0.5)
                             .frame(maxWidth: .infinity)
                     }
-                    .frame(height: 60)
+                    .frame(height: hourHeight)
+                    .id(hour)
                 }
             }
 
@@ -127,10 +190,9 @@ struct WeekView: View {
                     ZStack(alignment: .top) {
                         Color.clear
 
-                        ForEach(eventsFor(date: date), id: \.id) { event in
-                            if !event.isAllDay {
-                                weekEventBlock(event: event)
-                            }
+                        ForEach(eventsFor(date: date).filter({ !$0.isAllDay }), id: \.id) { event in
+                            weekEventBlock(event: event)
+                                .onTapGesture { editingEvent = event }
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -142,7 +204,7 @@ struct WeekView: View {
     private func weekEventBlock(event: CalendarEvent) -> some View {
         let startHour = Calendar.current.component(.hour, from: event.startDate)
         let startMinute = Calendar.current.component(.minute, from: event.startDate)
-        let topOffset = CGFloat(startHour - hours.first!) * 60 + CGFloat(startMinute)
+        let topOffset = CGFloat(startHour) * hourHeight + CGFloat(startMinute)
         let height = max(CGFloat(event.durationMinutes), 20)
 
         return VStack(alignment: .leading, spacing: 1) {

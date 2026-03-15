@@ -2,8 +2,10 @@ import SwiftUI
 import SwiftData
 
 struct AgendaView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @State private var showEventEditor = false
+    @State private var editingEvent: CalendarEvent?
 
     var body: some View {
         List {
@@ -11,6 +13,15 @@ struct AgendaView: View {
                 Section {
                     ForEach(group.events, id: \.id) { event in
                         AgendaEventRow(event: event)
+                            .contentShape(Rectangle())
+                            .onTapGesture { editingEvent = event }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    modelContext.delete(event)
+                                } label: {
+                                    Label("Slet", systemImage: "trash")
+                                }
+                            }
                     }
                 } header: {
                     HStack {
@@ -50,15 +61,30 @@ struct AgendaView: View {
         .sheet(isPresented: $showEventEditor) {
             EventEditorView()
         }
+        .sheet(item: $editingEvent) { event in
+            EventEditorView(initialDate: event.startDate, existingEvent: event)
+        }
     }
 
     private var groupedEvents: [(date: Date, events: [CalendarEvent])] {
         let upcoming = allEvents.filter { $0.endDate >= Date().startOfDay }
-        let grouped = Dictionary(grouping: upcoming) { event in
-            event.startDate.startOfDay
+
+        // Build date-event pairs including multi-day events on each day they span
+        var dateEventPairs: [(date: Date, event: CalendarEvent)] = []
+        for event in upcoming {
+            let start = max(event.startDate.startOfDay, Date().startOfDay)
+            let end = event.endDate.startOfDay
+            var day = start
+            while day <= end {
+                dateEventPairs.append((date: day, event: event))
+                guard let next = Calendar.current.date(byAdding: .day, value: 1, to: day) else { break }
+                day = next
+            }
         }
+
+        let grouped = Dictionary(grouping: dateEventPairs) { $0.date }
         return grouped
-            .map { (date: $0.key, events: $0.value.sorted { $0.startDate < $1.startDate }) }
+            .map { (date: $0.key, events: $0.value.map(\.event).sorted { $0.startDate < $1.startDate }) }
             .sorted { $0.date < $1.date }
     }
 }

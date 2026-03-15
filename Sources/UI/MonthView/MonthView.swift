@@ -7,6 +7,7 @@ struct MonthView: View {
     @State private var selectedDate: Date? = Date()
     @State private var showDayPeek = false
     @State private var showEventEditor = false
+    @State private var editingEvent: CalendarEvent?
     @State private var dragOffset: CGFloat = 0
 
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
@@ -25,7 +26,8 @@ struct MonthView: View {
                     date: selected,
                     events: eventsFor(date: selected),
                     onClose: { withAnimation(.spring(response: 0.3)) { showDayPeek = false } },
-                    onAddEvent: { showEventEditor = true }
+                    onAddEvent: { showEventEditor = true },
+                    onEditEvent: { event in editingEvent = event }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -43,6 +45,9 @@ struct MonthView: View {
         .sheet(isPresented: $showEventEditor) {
             EventEditorView(initialDate: selectedDate ?? Date())
         }
+        .sheet(item: $editingEvent) { event in
+            EventEditorView(initialDate: event.startDate, existingEvent: event)
+        }
     }
 
     // MARK: - Month Header
@@ -56,14 +61,8 @@ struct MonthView: View {
 
             Spacer()
 
-            VStack(spacing: 2) {
-                Text(currentMonth.monthName)
-                    .font(.title2.weight(.bold))
-
-                Text("Uge \(currentMonth.weekNumber)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(currentMonth.monthName)
+                .font(.title2.weight(.bold))
 
             Spacer()
 

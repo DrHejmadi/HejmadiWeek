@@ -171,14 +171,16 @@ struct TodoListView: View {
     }
 
     private func deleteTodos(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(pendingTodos[index])
+        let todosToDelete = offsets.map { pendingTodos[$0] }
+        for todo in todosToDelete {
+            modelContext.delete(todo)
         }
     }
 
     private func deleteCompletedTodos(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(completedTodos[index])
+        let todosToDelete = offsets.map { completedTodos[$0] }
+        for todo in todosToDelete {
+            modelContext.delete(todo)
         }
     }
 }

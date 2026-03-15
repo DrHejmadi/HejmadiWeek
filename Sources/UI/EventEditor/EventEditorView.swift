@@ -26,11 +26,12 @@ struct EventEditorView: View {
         self.initialDate = initialDate
         self.existingEvent = existingEvent
 
+        let nextHour = (Calendar.current.component(.hour, from: Date()) + 1) % 24
         let start = existingEvent?.startDate ?? Calendar.current.date(
-            bySettingHour: Calendar.current.component(.hour, from: Date()) + 1,
+            bySettingHour: nextHour,
             minute: 0,
             second: 0,
-            of: initialDate
+            of: nextHour == 0 ? Calendar.current.date(byAdding: .day, value: 1, to: initialDate) ?? initialDate : initialDate
         ) ?? initialDate
 
         let end = existingEvent?.endDate ?? Calendar.current.date(byAdding: .hour, value: 1, to: start) ?? start
@@ -69,7 +70,9 @@ struct EventEditorView: View {
                 }
             }
             .onAppear {
-                if selectedCategory == nil {
+                if let existing = existingEvent, let cat = existing.category {
+                    selectedCategory = cat
+                } else if selectedCategory == nil {
                     selectedCategory = categories.first
                 }
             }

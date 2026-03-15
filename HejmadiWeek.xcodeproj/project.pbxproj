@@ -19,6 +19,7 @@
 		85D3F6F4AB7A4A94100BA893 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2537F0720B66CB0A548788B /* ContentView.swift */; };
 		88F44F03A07179BF01E44319 /* AgendaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D189ED01B44365EF54CC29 /* AgendaView.swift */; };
 		9127DB226D6FA92FF45803EC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FB73ED3E3B1A0560E6C440 /* SettingsView.swift */; };
+		9EFD318FBF4AC83D7624070D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE3E25F14D75BF7A43C4ECD8 /* Assets.xcassets */; };
 		D30F35DD0B85E952B4A5DBE2 /* MonthDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D935813AAC7115594A7A2E10 /* MonthDayCell.swift */; };
 		E7852460B3288678ACF54471 /* WeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13BC949AF3DB50D4E26ADF6B /* WeekView.swift */; };
 		F240EF01C65DB64DAA666DC3 /* HejmadiWeekApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DBFCF56B95A0516FB3CC53B /* HejmadiWeekApp.swift */; };
@@ -36,6 +37,7 @@
 		9554C1CF5443781766E44115 /* HejmadiWeek.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HejmadiWeek.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD7AFFF7B607C795085CC20A /* TodoListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoListView.swift; sourceTree = "<group>"; };
 		C2890A473F011B99B6AC2AD9 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
+		CE3E25F14D75BF7A43C4ECD8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D2537F0720B66CB0A548788B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D2660BE272B880A3AFA06582 /* DayPeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPeekView.swift; sourceTree = "<group>"; };
 		D2FB73ED3E3B1A0560E6C440 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -69,6 +71,14 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
+		125AB2CE6A4B976F82E8A9A9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CE3E25F14D75BF7A43C4ECD8 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		189C6E8D50B135A74A4C911C /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -84,6 +94,7 @@
 		742AF7FD996173A01B910118 = {
 			isa = PBXGroup;
 			children = (
+				125AB2CE6A4B976F82E8A9A9 /* Resources */,
 				AFDD51EF366A6E2009EA6348 /* Sources */,
 				E7C652ACBCE83820CE7B824C /* Products */,
 			);
@@ -170,6 +181,7 @@
 			buildConfigurationList = 27CB9DEE1600D22CAF472818 /* Build configuration list for PBXNativeTarget "HejmadiWeek" */;
 			buildPhases = (
 				7984FDFB4699BF20628044E8 /* Sources */,
+				2B7CFBBE0362CA86FD7E7F06 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -215,6 +227,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2B7CFBBE0362CA86FD7E7F06 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9EFD318FBF4AC83D7624070D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		7984FDFB4699BF20628044E8 /* Sources */ = {
@@ -276,7 +299,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -344,7 +367,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -376,12 +399,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = HejmadiWeek.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HejmadiWeek;
+				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "HejmadiWeek bruger din kalender til at vise og oprette begivenheder.";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "HejmadiWeek bruger påmindelser til at integrere to-do opgaver.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -406,12 +432,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = HejmadiWeek.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HejmadiWeek;
+				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "HejmadiWeek bruger din kalender til at vise og oprette begivenheder.";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "HejmadiWeek bruger påmindelser til at integrere to-do opgaver.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
