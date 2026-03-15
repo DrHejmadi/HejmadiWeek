@@ -3,17 +3,17 @@ import SwiftData
 
 @Model
 final class TodoItem {
-    var id: UUID
-    var title: String
-    var notes: String
+    var id: UUID = UUID()
+    var title: String = ""
+    var notes: String = ""
     var dueDate: Date?
-    var isCompleted: Bool
+    var isCompleted: Bool = false
     var completedAt: Date?
-    var priority: Int // 0=none, 1=low, 2=medium, 3=high
-    var sortOrder: Int
-    var isShared: Bool
-    var createdAt: Date
-    var updatedAt: Date
+    var priority: Int = 0
+    var sortOrder: Int = 0
+    var isShared: Bool = false
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
 
     var category: CalendarCategory?
     var linkedEvent: CalendarEvent?

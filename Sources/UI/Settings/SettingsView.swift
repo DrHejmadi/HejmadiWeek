@@ -106,7 +106,7 @@ struct MenuBarView: View {
             Divider()
             Button("Åbn HejmadiWeek") {
                 #if os(macOS)
-                NSApp.activate(ignoringOtherApps: true)
+                NSApp.activate()
                 #endif
             }
             .padding(.horizontal)

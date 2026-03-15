@@ -110,7 +110,7 @@ struct WeekView: View {
                             .padding(.trailing, 4)
 
                         Rectangle()
-                            .fill(Color(.separator))
+                            .fill(Color.secondary.opacity(0.2))
                             .frame(height: 0.5)
                             .frame(maxWidth: .infinity)
                     }

@@ -4,18 +4,18 @@ import SwiftUI
 
 @Model
 final class CalendarCategory {
-    var id: UUID
-    var name: String
-    var colorHex: String
-    var iconName: String
-    var sortOrder: Int
-    var isShared: Bool
+    var id: UUID = UUID()
+    var name: String = ""
+    var colorHex: String = "#4A90D9"
+    var iconName: String = "calendar"
+    var sortOrder: Int = 0
+    var isShared: Bool = false
 
-    @Relationship(deleteRule: .cascade, inverse: \CalendarEvent.category)
-    var events: [CalendarEvent] = []
+    @Relationship(deleteRule: .nullify, inverse: \CalendarEvent.category)
+    var events: [CalendarEvent]?
 
-    @Relationship(deleteRule: .cascade, inverse: \TodoItem.category)
-    var todos: [TodoItem] = []
+    @Relationship(deleteRule: .nullify, inverse: \TodoItem.category)
+    var todos: [TodoItem]?
 
     init(
         name: String,

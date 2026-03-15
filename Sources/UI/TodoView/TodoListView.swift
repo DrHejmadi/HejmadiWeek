@@ -55,7 +55,9 @@ struct TodoListView: View {
                     )
                 }
             }
+            #if os(iOS)
             .listStyle(.insetGrouped)
+            #endif
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -108,7 +110,7 @@ struct TodoListView: View {
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(Color(.systemGray6))
+                .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .onSubmit { addQuickTodo() }
 
@@ -266,7 +268,7 @@ struct FilterChip: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(isSelected ? color.opacity(0.15) : Color(.systemGray6))
+            .background(isSelected ? color.opacity(0.15) : Color.secondary.opacity(0.12))
             .foregroundStyle(isSelected ? color : .primary)
             .clipShape(Capsule())
         }

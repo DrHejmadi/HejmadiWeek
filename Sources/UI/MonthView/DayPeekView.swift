@@ -133,7 +133,7 @@ struct DayPeekEventRow: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        .background(Color(.systemBackground).opacity(0.6))
+        .background(Color.primary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

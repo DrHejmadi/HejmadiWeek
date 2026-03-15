@@ -37,7 +37,9 @@ struct AgendaView: View {
                 )
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showEventEditor = true } label: {

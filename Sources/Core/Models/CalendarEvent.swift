@@ -3,25 +3,25 @@ import SwiftData
 
 @Model
 final class CalendarEvent {
-    var id: UUID
-    var title: String
-    var notes: String
-    var location: String
-    var startDate: Date
-    var endDate: Date
-    var isAllDay: Bool
+    var id: UUID = UUID()
+    var title: String = ""
+    var notes: String = ""
+    var location: String = ""
+    var startDate: Date = Date()
+    var endDate: Date = Date()
+    var isAllDay: Bool = false
     var recurrenceRule: String?
     var alertMinutesBefore: Int?
     var estimatedDurationMinutes: Int?
     var travelTimeMinutes: Int?
     var externalEventID: String?
-    var createdAt: Date
-    var updatedAt: Date
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
 
     var category: CalendarCategory?
 
-    @Relationship(deleteRule: .cascade, inverse: \TodoItem.linkedEvent)
-    var linkedTodos: [TodoItem] = []
+    @Relationship(deleteRule: .nullify, inverse: \TodoItem.linkedEvent)
+    var linkedTodos: [TodoItem]?
 
     init(
         title: String,
