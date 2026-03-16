@@ -21,6 +21,7 @@
 		9127DB226D6FA92FF45803EC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FB73ED3E3B1A0560E6C440 /* SettingsView.swift */; };
 		9EFD318FBF4AC83D7624070D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE3E25F14D75BF7A43C4ECD8 /* Assets.xcassets */; };
 		D30F35DD0B85E952B4A5DBE2 /* MonthDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D935813AAC7115594A7A2E10 /* MonthDayCell.swift */; };
+		E0EC710C9ACAB086B0B68CE9 /* EventKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F94CCCD520D72000359F57 /* EventKitManager.swift */; };
 		E7852460B3288678ACF54471 /* WeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13BC949AF3DB50D4E26ADF6B /* WeekView.swift */; };
 		F240EF01C65DB64DAA666DC3 /* HejmadiWeekApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DBFCF56B95A0516FB3CC53B /* HejmadiWeekApp.swift */; };
 /* End PBXBuildFile section */
@@ -34,6 +35,7 @@
 		5BDC81F2DE6D8D1FE7335CD5 /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
 		618B5410CF5836F5144A9AAB /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
 		61D189ED01B44365EF54CC29 /* AgendaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaView.swift; sourceTree = "<group>"; };
+		67F94CCCD520D72000359F57 /* EventKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitManager.swift; sourceTree = "<group>"; };
 		9554C1CF5443781766E44115 /* HejmadiWeek.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HejmadiWeek.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD7AFFF7B607C795085CC20A /* TodoListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoListView.swift; sourceTree = "<group>"; };
 		C2890A473F011B99B6AC2AD9 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
@@ -67,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				189C6E8D50B135A74A4C911C /* Models */,
+				AAD1CEE2F9105AD0CECEEAE3 /* Services */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -124,6 +127,14 @@
 				2AD44FFEC4EC23169421F68F /* MonthView.swift */,
 			);
 			path = MonthView;
+			sourceTree = "<group>";
+		};
+		AAD1CEE2F9105AD0CECEEAE3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				67F94CCCD520D72000359F57 /* EventKitManager.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		AC11C27BAB295ACA2B3652E1 /* Settings */ = {
@@ -252,6 +263,7 @@
 				25A5EA00E91BB2C475081E1C /* DateExtensions.swift in Sources */,
 				7A7F7977D4DAE72E13ED052A /* DayPeekView.swift in Sources */,
 				3DF0F2FE453ABDD7A9F1B5D5 /* EventEditorView.swift in Sources */,
+				E0EC710C9ACAB086B0B68CE9 /* EventKitManager.swift in Sources */,
 				F240EF01C65DB64DAA666DC3 /* HejmadiWeekApp.swift in Sources */,
 				D30F35DD0B85E952B4A5DBE2 /* MonthDayCell.swift in Sources */,
 				3B67CD1D5CC8382F935DDB5E /* MonthView.swift in Sources */,
@@ -299,7 +311,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -367,7 +379,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_NS_ASSERTIONS = NO;

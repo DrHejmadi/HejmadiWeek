@@ -6,20 +6,27 @@ struct AgendaView: View {
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @State private var showEventEditor = false
     @State private var editingEvent: CalendarEvent?
+    var ekManager: EventKitManager = .shared
 
     var body: some View {
         List {
-            ForEach(groupedEvents, id: \.date) { group in
+            ForEach(groupedDisplayEvents, id: \.date) { group in
                 Section {
                     ForEach(group.events, id: \.id) { event in
-                        AgendaEventRow(event: event)
+                        AgendaDisplayEventRow(event: event)
                             .contentShape(Rectangle())
-                            .onTapGesture { editingEvent = event }
+                            .onTapGesture {
+                                if let source = event.sourceEvent {
+                                    editingEvent = source
+                                }
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    modelContext.delete(event)
-                                } label: {
-                                    Label("Slet", systemImage: "trash")
+                                if !event.isExternal, let source = event.sourceEvent {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(source)
+                                    } label: {
+                                        Label("Slet", systemImage: "trash")
+                                    }
                                 }
                             }
                     }
@@ -40,7 +47,7 @@ struct AgendaView: View {
                 }
             }
 
-            if groupedEvents.isEmpty {
+            if groupedDisplayEvents.isEmpty {
                 ContentUnavailableView(
                     "Ingen kommende begivenheder",
                     systemImage: "calendar.badge.plus",
@@ -64,19 +71,43 @@ struct AgendaView: View {
         .sheet(item: $editingEvent) { event in
             EventEditorView(initialDate: event.startDate, existingEvent: event)
         }
+        .onAppear {
+            Task {
+                if !ekManager.isAuthorized {
+                    await ekManager.requestAccess()
+                }
+                ekManager.fetchEventsForMonth(containing: Date())
+            }
+        }
     }
 
-    private var groupedEvents: [(date: Date, events: [CalendarEvent])] {
-        let upcoming = allEvents.filter { $0.endDate >= Date().startOfDay }
+    private var groupedDisplayEvents: [(date: Date, events: [DisplayEvent])] {
+        // Internal events
+        let upcomingInternal = allEvents.filter { $0.endDate >= Date().startOfDay }
+        var dateEventPairs: [(date: Date, event: DisplayEvent)] = []
 
-        // Build date-event pairs including multi-day events on each day they span
-        var dateEventPairs: [(date: Date, event: CalendarEvent)] = []
-        for event in upcoming {
+        for event in upcomingInternal {
+            let displayEvent = DisplayEvent(event: event)
             let start = max(event.startDate.startOfDay, Date().startOfDay)
             let end = event.endDate.startOfDay
             var day = start
             while day <= end {
-                dateEventPairs.append((date: day, event: event))
+                dateEventPairs.append((date: day, event: displayEvent))
+                guard let next = Calendar.current.date(byAdding: .day, value: 1, to: day) else { break }
+                day = next
+            }
+        }
+
+        // External EventKit events
+        let externalEvents = ekManager.ekEvents
+            .filter { ($0.endDate ?? Date()) >= Date().startOfDay }
+        for ekEvent in externalEvents {
+            let displayEvent = DisplayEvent(ekEvent: ekEvent)
+            let start = max(ekEvent.startDate.startOfDay, Date().startOfDay)
+            let end = ekEvent.endDate.startOfDay
+            var day = start
+            while day <= end {
+                dateEventPairs.append((date: day, event: displayEvent))
                 guard let next = Calendar.current.date(byAdding: .day, value: 1, to: day) else { break }
                 day = next
             }
@@ -84,23 +115,34 @@ struct AgendaView: View {
 
         let grouped = Dictionary(grouping: dateEventPairs) { $0.date }
         return grouped
-            .map { (date: $0.key, events: $0.value.map(\.event).sorted { $0.startDate < $1.startDate }) }
+            .map { (date: $0.key, events: $0.value.map(\.event).sorted { a, b in
+                if a.isAllDay && !b.isAllDay { return true }
+                if !a.isAllDay && b.isAllDay { return false }
+                return a.startDate < b.startDate
+            }) }
             .sorted { $0.date < $1.date }
     }
 }
 
-struct AgendaEventRow: View {
-    let event: CalendarEvent
+struct AgendaDisplayEventRow: View {
+    let event: DisplayEvent
 
     var body: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(event.category?.color ?? .blue)
+                .fill(event.color)
                 .frame(width: 4)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(event.title)
-                    .font(.body.weight(.medium))
+                HStack(spacing: 4) {
+                    Text(event.title)
+                        .font(.body.weight(.medium))
+                    if event.isExternal {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 HStack(spacing: 8) {
                     if event.isAllDay {
@@ -127,10 +169,14 @@ struct AgendaEventRow: View {
 
             Spacer()
 
-            if let cat = event.category {
-                Image(systemName: cat.iconName)
-                    .foregroundStyle(cat.color)
+            Text(event.calendarName)
+                .font(.system(size: 9))
+                .foregroundStyle(event.color)
+
+            if !event.isExternal {
+                Image(systemName: "chevron.right")
                     .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
         }
         .padding(.vertical, 4)

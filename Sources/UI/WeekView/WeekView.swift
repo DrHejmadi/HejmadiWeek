@@ -9,6 +9,7 @@ struct WeekView: View {
     @State private var showEventEditor = false
     @State private var selectedDate = Date()
     @State private var editingEvent: CalendarEvent?
+    var ekManager: EventKitManager = .shared
 
     private let hours = Array(0...23)
     private let hourHeight: CGFloat = 60
@@ -45,6 +46,17 @@ struct WeekView: View {
         }
         .sheet(item: $editingEvent) { event in
             EventEditorView(initialDate: event.startDate, existingEvent: event)
+        }
+        .onAppear {
+            Task {
+                if !ekManager.isAuthorized {
+                    await ekManager.requestAccess()
+                }
+                ekManager.fetchEventsForMonth(containing: currentWeekStart)
+            }
+        }
+        .onChange(of: currentWeekStart) { _, newValue in
+            ekManager.fetchEventsForMonth(containing: newValue)
         }
     }
 
@@ -116,10 +128,11 @@ struct WeekView: View {
 
     private var allDaySection: some View {
         let allDayEvents = weekDates.flatMap { date in
-            eventsFor(date: date).filter { $0.isAllDay }
+            displayEventsFor(date: date).filter { $0.isAllDay }
         }
-        let uniqueEvents = Array(Set(allDayEvents.map { $0.id }))
-            .compactMap { id in allDayEvents.first { $0.id == id } }
+        // Deduplicate
+        var seen = Set<String>()
+        let uniqueEvents = allDayEvents.filter { seen.insert($0.id).inserted }
 
         return Group {
             if !uniqueEvents.isEmpty {
@@ -132,18 +145,22 @@ struct WeekView: View {
                             .padding(.trailing, 4)
 
                         ForEach(weekDates, id: \.self) { date in
-                            let dayAllDay = eventsFor(date: date).filter { $0.isAllDay }
+                            let dayAllDay = displayEventsFor(date: date).filter { $0.isAllDay }
                             VStack(spacing: 1) {
-                                ForEach(dayAllDay, id: \.id) { event in
+                                ForEach(dayAllDay) { event in
                                     Text(event.title)
                                         .font(.system(size: 9, weight: .medium))
                                         .lineLimit(1)
                                         .padding(.horizontal, 2)
                                         .padding(.vertical, 1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(event.category?.color.opacity(0.2) ?? Color.blue.opacity(0.2))
+                                        .background(event.color.opacity(0.2))
                                         .clipShape(RoundedRectangle(cornerRadius: 2))
-                                        .onTapGesture { editingEvent = event }
+                                        .onTapGesture {
+                                            if let source = event.sourceEvent {
+                                                editingEvent = source
+                                            }
+                                        }
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -190,9 +207,13 @@ struct WeekView: View {
                     ZStack(alignment: .top) {
                         Color.clear
 
-                        ForEach(eventsFor(date: date).filter({ !$0.isAllDay }), id: \.id) { event in
+                        ForEach(displayEventsFor(date: date).filter({ !$0.isAllDay })) { event in
                             weekEventBlock(event: event)
-                                .onTapGesture { editingEvent = event }
+                                .onTapGesture {
+                                    if let source = event.sourceEvent {
+                                        editingEvent = source
+                                    }
+                                }
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -201,7 +222,7 @@ struct WeekView: View {
         }
     }
 
-    private func weekEventBlock(event: CalendarEvent) -> some View {
+    private func weekEventBlock(event: DisplayEvent) -> some View {
         let startHour = Calendar.current.component(.hour, from: event.startDate)
         let startMinute = Calendar.current.component(.minute, from: event.startDate)
         let topOffset = CGFloat(startHour) * hourHeight + CGFloat(startMinute)
@@ -218,11 +239,11 @@ struct WeekView: View {
         .padding(3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: height)
-        .background(event.category?.color.opacity(0.2) ?? Color.blue.opacity(0.2))
+        .background(event.color.opacity(0.2))
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(event.category?.color ?? .blue, lineWidth: 1)
+                .stroke(event.color, lineWidth: 1)
                 .opacity(0.5)
         )
         .offset(y: topOffset)
@@ -241,6 +262,12 @@ struct WeekView: View {
             Calendar.current.isDate(event.startDate, inSameDayAs: date) ||
             (event.startDate < date.endOfDay && event.endDate > date.startOfDay)
         }
+    }
+
+    private func displayEventsFor(date: Date) -> [DisplayEvent] {
+        let internal_ = eventsFor(date: date).map { DisplayEvent(event: $0) }
+        let external = ekManager.eventsFor(date: date)
+        return (internal_ + external).sorted { $0.startDate < $1.startDate }
     }
 
     private func advanceWeek(by value: Int) {

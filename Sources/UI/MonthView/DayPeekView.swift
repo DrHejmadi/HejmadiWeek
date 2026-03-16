@@ -3,9 +3,27 @@ import SwiftUI
 struct DayPeekView: View {
     let date: Date
     let events: [CalendarEvent]
+    var displayEvents: [DisplayEvent] = []
     let onClose: () -> Void
     let onAddEvent: () -> Void
     let onEditEvent: (CalendarEvent) -> Void
+
+    private var allEvents: [DisplayEvent] {
+        if !displayEvents.isEmpty { return sortedDisplayEvents }
+        return events.map { DisplayEvent(event: $0) }.sorted { a, b in
+            if a.isAllDay && !b.isAllDay { return true }
+            if !a.isAllDay && b.isAllDay { return false }
+            return a.startDate < b.startDate
+        }
+    }
+
+    private var sortedDisplayEvents: [DisplayEvent] {
+        displayEvents.sorted { a, b in
+            if a.isAllDay && !b.isAllDay { return true }
+            if !a.isAllDay && b.isAllDay { return false }
+            return a.startDate < b.startDate
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,7 +65,7 @@ struct DayPeekView: View {
                 .padding(.top, 8)
 
             // Events list
-            if events.isEmpty {
+            if allEvents.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "calendar.badge.plus")
                         .font(.largeTitle)
@@ -61,10 +79,14 @@ struct DayPeekView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 6) {
-                        ForEach(sortedEvents, id: \.id) { event in
-                            DayPeekEventRow(event: event)
+                        ForEach(allEvents) { event in
+                            DayPeekDisplayEventRow(event: event)
                                 .contentShape(Rectangle())
-                                .onTapGesture { onEditEvent(event) }
+                                .onTapGesture {
+                                    if let source = event.sourceEvent {
+                                        onEditEvent(source)
+                                    }
+                                }
                         }
                     }
                     .padding(.horizontal)
@@ -78,30 +100,28 @@ struct DayPeekView: View {
         .shadow(color: .black.opacity(0.1), radius: 10, y: -2)
         .padding(.horizontal, 4)
     }
-
-    private var sortedEvents: [CalendarEvent] {
-        events.sorted { a, b in
-            if a.isAllDay && !b.isAllDay { return true }
-            if !a.isAllDay && b.isAllDay { return false }
-            return a.startDate < b.startDate
-        }
-    }
 }
 
-struct DayPeekEventRow: View {
-    let event: CalendarEvent
+struct DayPeekDisplayEventRow: View {
+    let event: DisplayEvent
 
     var body: some View {
         HStack(spacing: 10) {
-            // Color bar
             RoundedRectangle(cornerRadius: 2)
-                .fill(event.category?.color ?? .blue)
+                .fill(event.color)
                 .frame(width: 4, height: 36)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(event.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(event.title)
+                        .font(.subheadline.weight(.medium))
+                        .lineLimit(1)
+                    if event.isExternal {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 HStack(spacing: 4) {
                     if event.isAllDay {
@@ -128,15 +148,15 @@ struct DayPeekEventRow: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-
-            if let category = event.category {
-                Image(systemName: category.iconName)
+            if !event.isExternal {
+                Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundStyle(category.color)
+                    .foregroundStyle(.tertiary)
             }
+
+            Text(event.calendarName)
+                .font(.system(size: 8))
+                .foregroundStyle(event.color)
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)

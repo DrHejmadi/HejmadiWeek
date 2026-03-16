@@ -9,6 +9,7 @@ struct MonthView: View {
     @State private var showEventEditor = false
     @State private var editingEvent: CalendarEvent?
     @State private var dragOffset: CGFloat = 0
+    var ekManager: EventKitManager = .shared
 
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @Query(sort: \CalendarCategory.sortOrder) private var categories: [CalendarCategory]
@@ -25,6 +26,7 @@ struct MonthView: View {
                 DayPeekView(
                     date: selected,
                     events: eventsFor(date: selected),
+                    displayEvents: displayEventsFor(date: selected),
                     onClose: { withAnimation(.spring(response: 0.3)) { showDayPeek = false } },
                     onAddEvent: { showEventEditor = true },
                     onEditEvent: { event in editingEvent = event }
@@ -47,6 +49,17 @@ struct MonthView: View {
         }
         .sheet(item: $editingEvent) { event in
             EventEditorView(initialDate: event.startDate, existingEvent: event)
+        }
+        .onAppear {
+            Task {
+                if !ekManager.isAuthorized {
+                    await ekManager.requestAccess()
+                }
+                ekManager.fetchEventsForMonth(containing: currentMonth)
+            }
+        }
+        .onChange(of: currentMonth) { _, newValue in
+            ekManager.fetchEventsForMonth(containing: newValue)
         }
     }
 
@@ -130,7 +143,8 @@ struct MonthView: View {
                             isSelected: selectedDate?.isSameDay(as: date) == true,
                             isToday: date.isToday,
                             events: eventsFor(date: date),
-                            categories: categories
+                            categories: categories,
+                            displayEvents: displayEventsFor(date: date)
                         )
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3)) {
@@ -164,6 +178,12 @@ struct MonthView: View {
             return Calendar.current.isDate(event.startDate, inSameDayAs: date) ||
                    (event.startDate < date.endOfDay && event.endDate > date.startOfDay)
         }
+    }
+
+    private func displayEventsFor(date: Date) -> [DisplayEvent] {
+        let internal_ = eventsFor(date: date).map { DisplayEvent(event: $0) }
+        let external = ekManager.eventsFor(date: date)
+        return (internal_ + external).sorted { $0.startDate < $1.startDate }
     }
 
     private func advanceMonth(by value: Int) {

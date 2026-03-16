@@ -7,8 +7,14 @@ struct MonthDayCell: View {
     let isToday: Bool
     let events: [CalendarEvent]
     let categories: [CalendarCategory]
+    var displayEvents: [DisplayEvent] = []
 
     private let maxVisibleEvents = 3
+
+    private var allDisplayEvents: [DisplayEvent] {
+        if !displayEvents.isEmpty { return displayEvents }
+        return events.map { DisplayEvent(event: $0) }
+    }
 
     var body: some View {
         VStack(spacing: 2) {
@@ -26,7 +32,7 @@ struct MonthDayCell: View {
                 }
 
             // Event indicators
-            if !events.isEmpty {
+            if !allDisplayEvents.isEmpty {
                 eventIndicators
             }
 
@@ -67,7 +73,7 @@ struct MonthDayCell: View {
     }
 
     private var heatmapColor: Color {
-        let count = events.count
+        let count = allDisplayEvents.count
         switch count {
         case 0: return .clear
         case 1: return Color.green.opacity(0.06)
@@ -81,11 +87,11 @@ struct MonthDayCell: View {
 
     @ViewBuilder
     private var eventIndicators: some View {
-        let visibleEvents = Array(events.prefix(maxVisibleEvents))
-        let overflow = events.count - maxVisibleEvents
+        let visibleEvents = Array(allDisplayEvents.prefix(maxVisibleEvents))
+        let overflow = allDisplayEvents.count - maxVisibleEvents
 
         VStack(spacing: 1) {
-            ForEach(visibleEvents, id: \.id) { event in
+            ForEach(visibleEvents) { event in
                 eventChip(for: event)
             }
 
@@ -97,10 +103,10 @@ struct MonthDayCell: View {
         }
     }
 
-    private func eventChip(for event: CalendarEvent) -> some View {
+    private func eventChip(for event: DisplayEvent) -> some View {
         HStack(spacing: 2) {
             Circle()
-                .fill(event.category?.color ?? .blue)
+                .fill(event.color)
                 .frame(width: 4, height: 4)
 
             if event.isAllDay {
