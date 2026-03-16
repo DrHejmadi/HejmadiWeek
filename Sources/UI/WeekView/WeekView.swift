@@ -9,38 +9,62 @@ struct WeekView: View {
     @State private var showEventEditor = false
     @State private var selectedDate = Date()
     @State private var editingEvent: CalendarEvent?
+    @State private var peekDate: Date?
+    @State private var showPeek = false
     var ekManager: EventKitManager = .shared
 
     private let hours = Array(0...23)
     private let hourHeight: CGFloat = 60
 
     var body: some View {
-        VStack(spacing: 0) {
-            weekHeader
-            weekDayStrip
-            allDaySection
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                weekHeader
+                    .padding(.top, 4)
+                weekDayStrip
+                allDaySection
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    timeGrid
-                        .id("timeGrid")
-                }
-                .onAppear {
-                    // Scroll to 7 AM on appear
-                    proxy.scrollTo(7, anchor: .top)
-                }
-            }
-        }
-        .gesture(
-            DragGesture(minimumDistance: 50)
-                .onEnded { value in
-                    if value.translation.width < -50 {
-                        withAnimation { advanceWeek(by: 1) }
-                    } else if value.translation.width > 50 {
-                        withAnimation { advanceWeek(by: -1) }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        timeGrid
+                            .id("timeGrid")
+                    }
+                    .onAppear {
+                        proxy.scrollTo(7, anchor: .top)
                     }
                 }
-        )
+            }
+            .gesture(
+                DragGesture(minimumDistance: 50)
+                    .onEnded { value in
+                        if value.translation.width < -50 {
+                            withAnimation { advanceWeek(by: 1) }
+                        } else if value.translation.width > 50 {
+                            withAnimation { advanceWeek(by: -1) }
+                        }
+                    }
+            )
+
+            // Day peek overlay
+            if showPeek, let peekDate {
+                DayPeekView(
+                    date: peekDate,
+                    events: eventsFor(date: peekDate),
+                    displayEvents: displayEventsFor(date: peekDate),
+                    onClose: { withAnimation(.spring(response: 0.3)) { showPeek = false } },
+                    onAddEvent: {
+                        selectedDate = peekDate
+                        showPeek = false
+                        showEventEditor = true
+                    },
+                    onEditEvent: { event in
+                        showPeek = false
+                        editingEvent = event
+                    }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .sheet(isPresented: $showEventEditor) {
             EventEditorView(initialDate: selectedDate)
         }
@@ -66,12 +90,18 @@ struct WeekView: View {
         HStack {
             Button { withAnimation { advanceWeek(by: -1) } } label: {
                 Image(systemName: "chevron.left")
+                    .font(.title3.weight(.semibold))
             }
 
             Spacer()
 
-            Text("Uge \(currentWeekStart.weekNumber)")
-                .font(.headline)
+            VStack(spacing: 0) {
+                Text(monthLabel)
+                    .font(.title3.weight(.bold))
+                Text("Uge \(currentWeekStart.weekNumber)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
@@ -86,10 +116,26 @@ struct WeekView: View {
 
             Button { withAnimation { advanceWeek(by: 1) } } label: {
                 Image(systemName: "chevron.right")
+                    .font(.title3.weight(.semibold))
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
+    }
+
+    /// Shows the month name(s) covered by this week
+    private var monthLabel: String {
+        let dates = weekDates
+        guard let first = dates.first, let last = dates.last else { return "" }
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "da_DK")
+        fmt.dateFormat = "MMMM"
+        let firstMonth = fmt.string(from: first).capitalized
+        let lastMonth = fmt.string(from: last).capitalized
+        if firstMonth == lastMonth {
+            return firstMonth
+        }
+        return "\(firstMonth) / \(lastMonth)"
     }
 
     // MARK: - Day Strip
@@ -115,9 +161,20 @@ struct WeekView: View {
                         }
                 }
                 .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
                 .onTapGesture {
                     selectedDate = date
                     showEventEditor = true
+                }
+                .onLongPressGesture {
+                    withAnimation(.spring(response: 0.3)) {
+                        if peekDate?.isSameDay(as: date) == true && showPeek {
+                            showPeek = false
+                        } else {
+                            peekDate = date
+                            showPeek = true
+                        }
+                    }
                 }
             }
         }
@@ -130,7 +187,6 @@ struct WeekView: View {
         let allDayEvents = weekDates.flatMap { date in
             displayEventsFor(date: date).filter { $0.isAllDay }
         }
-        // Deduplicate
         var seen = Set<String>()
         let uniqueEvents = allDayEvents.filter { seen.insert($0.id).inserted }
 
@@ -178,7 +234,6 @@ struct WeekView: View {
 
     private var timeGrid: some View {
         ZStack(alignment: .topLeading) {
-            // Hour lines
             VStack(spacing: 0) {
                 ForEach(hours, id: \.self) { hour in
                     HStack(alignment: .top, spacing: 0) {
@@ -198,7 +253,6 @@ struct WeekView: View {
                 }
             }
 
-            // Events overlay
             HStack(spacing: 1) {
                 Spacer()
                     .frame(width: 48)

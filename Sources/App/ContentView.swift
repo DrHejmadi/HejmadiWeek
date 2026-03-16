@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum AppTab: String, CaseIterable {
-    case month = "Måned"
     case week = "Uge"
+    case month = "Måned"
     case agenda = "Agenda"
     case todo = "To-Do"
     case settings = "Indstillinger"
@@ -19,7 +19,7 @@ enum AppTab: String, CaseIterable {
 }
 
 struct ContentView: View {
-    @State private var selectedTab: AppTab = .month
+    @State private var selectedTab: AppTab = .week
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
@@ -38,16 +38,38 @@ struct ContentView: View {
             }
         } else {
             TabView(selection: $selectedTab) {
-                ForEach([AppTab.month, .week, .agenda, .todo, .settings], id: \.self) { tab in
-                    NavigationStack {
-                        viewForTab(tab)
-                            .navigationTitle(tab.rawValue)
-                    }
-                    .tabItem {
-                        Label(tab.rawValue, systemImage: tab.icon)
-                    }
-                    .tag(tab)
+                // Week tab — no navigation bar, uses full screen
+                WeekView()
+                    .tabItem { Label("Uge", systemImage: "calendar.day.timeline.left") }
+                    .tag(AppTab.week)
+
+                NavigationStack {
+                    MonthView()
+                        .navigationTitle("Måned")
                 }
+                .tabItem { Label("Måned", systemImage: "calendar") }
+                .tag(AppTab.month)
+
+                NavigationStack {
+                    AgendaView()
+                        .navigationTitle("Agenda")
+                }
+                .tabItem { Label("Agenda", systemImage: "list.bullet.below.rectangle") }
+                .tag(AppTab.agenda)
+
+                NavigationStack {
+                    TodoListView()
+                        .navigationTitle("To-Do")
+                }
+                .tabItem { Label("To-Do", systemImage: "checklist") }
+                .tag(AppTab.todo)
+
+                NavigationStack {
+                    SettingsView()
+                        .navigationTitle("Indstillinger")
+                }
+                .tabItem { Label("Indstillinger", systemImage: "gearshape") }
+                .tag(AppTab.settings)
             }
         }
         #endif
@@ -55,7 +77,7 @@ struct ContentView: View {
 
     private var sidebar: some View {
         List {
-            ForEach([AppTab.month, .week, .agenda, .todo], id: \.self) { tab in
+            ForEach([AppTab.week, .month, .agenda, .todo], id: \.self) { tab in
                 Button {
                     selectedTab = tab
                 } label: {
