@@ -8,28 +8,39 @@ struct MonthView: View {
     @State private var showDayPeek = false
     @State private var showEventEditor = false
     @State private var editingEvent: CalendarEvent?
-    @State private var dragOffset: CGFloat = 0
     var ekManager: EventKitManager = .shared
 
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @Query(sort: \CalendarCategory.sortOrder) private var categories: [CalendarCategory]
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
     private let weekdays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
 
     var body: some View {
-        VStack(spacing: 0) {
-            monthHeader
-            weekdayHeader
-            monthGrid
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                monthHeader
+                    .padding(.top, 8)
+                weekdayHeader
+                monthGrid
+                    .frame(maxHeight: .infinity)
+                Spacer(minLength: 0)
+            }
+
+            // Day peek overlay on long-press
             if showDayPeek, let selected = selectedDate {
                 DayPeekView(
                     date: selected,
                     events: eventsFor(date: selected),
                     displayEvents: displayEventsFor(date: selected),
                     onClose: { withAnimation(.spring(response: 0.3)) { showDayPeek = false } },
-                    onAddEvent: { showEventEditor = true },
-                    onEditEvent: { event in editingEvent = event }
+                    onAddEvent: {
+                        showDayPeek = false
+                        showEventEditor = true
+                    },
+                    onEditEvent: { event in
+                        showDayPeek = false
+                        editingEvent = event
+                    }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -75,7 +86,7 @@ struct MonthView: View {
             Spacer()
 
             Text(currentMonth.monthName)
-                .font(.title2.weight(.bold))
+                .font(.title.weight(.bold))
 
             Spacer()
 
@@ -95,14 +106,13 @@ struct MonthView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 12)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Weekday Header
 
     private var weekdayHeader: some View {
         HStack(spacing: 0) {
-            // Week number column
             Text("Uge")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
@@ -130,7 +140,6 @@ struct MonthView: View {
         return VStack(spacing: 1) {
             ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                 HStack(spacing: 0) {
-                    // Week number
                     Text("\(week.first?.weekNumber ?? 0)")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -146,6 +155,8 @@ struct MonthView: View {
                             categories: categories,
                             displayEvents: displayEventsFor(date: date)
                         )
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3)) {
                                 if selectedDate?.isSameDay(as: date) == true {

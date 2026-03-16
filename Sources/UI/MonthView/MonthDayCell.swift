@@ -9,15 +9,13 @@ struct MonthDayCell: View {
     let categories: [CalendarCategory]
     var displayEvents: [DisplayEvent] = []
 
-    private let maxVisibleEvents = 3
-
     private var allDisplayEvents: [DisplayEvent] {
         if !displayEvents.isEmpty { return displayEvents }
         return events.map { DisplayEvent(event: $0) }
     }
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 3) {
             // Day number
             Text("\(date.dayOfMonth)")
                 .font(.system(size: 14, weight: isToday ? .bold : .medium))
@@ -31,15 +29,15 @@ struct MonthDayCell: View {
                     }
                 }
 
-            // Event indicators
+            // WeekCal-style dots
             if !allDisplayEvents.isEmpty {
-                eventIndicators
+                eventDots
             }
 
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 64)
+        .frame(maxHeight: .infinity)
         .background(cellBackground)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
@@ -58,68 +56,36 @@ struct MonthDayCell: View {
         }
     }
 
-    // MARK: - Cell Background (Heatmap)
+    // MARK: - Cell Background
 
     private var cellBackground: some View {
         Group {
             if isSelected {
                 Color.accentColor.opacity(0.08)
-            } else if !isCurrentMonth {
+            } else {
                 Color.clear
-            } else {
-                heatmapColor
             }
         }
     }
 
-    private var heatmapColor: Color {
-        let count = allDisplayEvents.count
-        switch count {
-        case 0: return .clear
-        case 1: return Color.green.opacity(0.06)
-        case 2: return Color.yellow.opacity(0.06)
-        case 3: return Color.orange.opacity(0.06)
-        default: return Color.red.opacity(0.08)
-        }
-    }
+    // MARK: - Event Dots (WeekCal style)
 
-    // MARK: - Event Indicators
+    private var eventDots: some View {
+        let maxDots = 4
+        let visibleEvents = Array(allDisplayEvents.prefix(maxDots))
+        let hasMore = allDisplayEvents.count > maxDots
 
-    @ViewBuilder
-    private var eventIndicators: some View {
-        let visibleEvents = Array(allDisplayEvents.prefix(maxVisibleEvents))
-        let overflow = allDisplayEvents.count - maxVisibleEvents
-
-        VStack(spacing: 1) {
+        return HStack(spacing: 3) {
             ForEach(visibleEvents) { event in
-                eventChip(for: event)
+                Circle()
+                    .fill(event.color)
+                    .frame(width: 5, height: 5)
             }
-
-            if overflow > 0 {
-                Text("+\(overflow)")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private func eventChip(for event: DisplayEvent) -> some View {
-        HStack(spacing: 2) {
-            Circle()
-                .fill(event.color)
-                .frame(width: 4, height: 4)
-
-            if event.isAllDay {
-                Text(event.title)
-                    .font(.system(size: 8, weight: .medium))
-                    .lineLimit(1)
-            } else {
-                Text(event.startDate.timeString)
-                    .font(.system(size: 7))
-                    .foregroundStyle(.secondary)
+            if hasMore {
+                Circle()
+                    .fill(Color.secondary.opacity(0.4))
+                    .frame(width: 5, height: 5)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 2)
     }
 }

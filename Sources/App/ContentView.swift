@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum AppTab: String, CaseIterable {
-    case week = "Uge"
     case month = "Måned"
+    case week = "Uge"
     case agenda = "Agenda"
     case todo = "To-Do"
     case settings = "Indstillinger"
@@ -19,7 +19,7 @@ enum AppTab: String, CaseIterable {
 }
 
 struct ContentView: View {
-    @State private var selectedTab: AppTab = .week
+    @State private var selectedTab: AppTab = .month
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
@@ -38,17 +38,17 @@ struct ContentView: View {
             }
         } else {
             TabView(selection: $selectedTab) {
-                // Week tab — no navigation bar, uses full screen
-                WeekView()
-                    .tabItem { Label("Uge", systemImage: "calendar.day.timeline.left") }
-                    .tag(AppTab.week)
+                // Month tab — no navigation bar, full screen
+                MonthView()
+                    .tabItem { Label("Måned", systemImage: "calendar") }
+                    .tag(AppTab.month)
 
                 NavigationStack {
-                    MonthView()
-                        .navigationTitle("Måned")
+                    WeekView()
+                        .navigationTitle("Uge")
                 }
-                .tabItem { Label("Måned", systemImage: "calendar") }
-                .tag(AppTab.month)
+                .tabItem { Label("Uge", systemImage: "calendar.day.timeline.left") }
+                .tag(AppTab.week)
 
                 NavigationStack {
                     AgendaView()
@@ -77,7 +77,7 @@ struct ContentView: View {
 
     private var sidebar: some View {
         List {
-            ForEach([AppTab.week, .month, .agenda, .todo], id: \.self) { tab in
+            ForEach([AppTab.month, .week, .agenda, .todo], id: \.self) { tab in
                 Button {
                     selectedTab = tab
                 } label: {
