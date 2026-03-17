@@ -5,9 +5,10 @@ struct MonthView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var currentMonth = Date()
     @State private var selectedDate: Date? = Date()
-    @State private var showDayPeek = false
     @State private var showEventEditor = false
     @State private var editingEvent: CalendarEvent?
+    @State private var zoomedDate: Date?
+    @State private var showCalendarPicker = false
     var ekManager: EventKitManager = .shared
 
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
@@ -16,7 +17,7 @@ struct MonthView: View {
     private let weekdays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             VStack(spacing: 0) {
                 monthHeader
                     .padding(.top, 8)
@@ -26,23 +27,9 @@ struct MonthView: View {
                 Spacer(minLength: 0)
             }
 
-            // Day peek overlay on long-press
-            if showDayPeek, let selected = selectedDate {
-                DayPeekView(
-                    date: selected,
-                    events: eventsFor(date: selected),
-                    displayEvents: displayEventsFor(date: selected),
-                    onClose: { withAnimation(.spring(response: 0.3)) { showDayPeek = false } },
-                    onAddEvent: {
-                        showDayPeek = false
-                        showEventEditor = true
-                    },
-                    onEditEvent: { event in
-                        showDayPeek = false
-                        editingEvent = event
-                    }
-                )
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+            // Day zoom overlay (long-press / hover)
+            if let zDate = zoomedDate {
+                dayZoomOverlay(for: zDate)
             }
         }
         .gesture(
@@ -77,36 +64,75 @@ struct MonthView: View {
     // MARK: - Month Header
 
     private var monthHeader: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button { withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) } } label: {
                 Image(systemName: "chevron.left")
                     .font(.title3.weight(.semibold))
             }
 
-            Spacer()
-
             Text(currentMonth.monthName)
                 .font(.title.weight(.bold))
 
+            Button { withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) } } label: {
+                Image(systemName: "chevron.right")
+                    .font(.title3.weight(.semibold))
+            }
+
             Spacer()
 
-            HStack(spacing: 16) {
-                Button {
-                    withAnimation(.spring(response: 0.4)) { currentMonth = Date() }
-                    selectedDate = Date()
-                } label: {
-                    Text("I dag")
-                        .font(.subheadline.weight(.medium))
-                }
+            Button {
+                withAnimation(.spring(response: 0.4)) { currentMonth = Date() }
+                selectedDate = Date()
+            } label: {
+                Text("I dag")
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.12))
+                    .clipShape(Capsule())
+            }
 
-                Button { withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) } } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.title3.weight(.semibold))
+            // Calendar filter circles
+            calendarFilterButtons
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+
+    private var calendarFilterButtons: some View {
+        HStack(spacing: 6) {
+            // Internal categories
+            ForEach(categories.prefix(5)) { cat in
+                Circle()
+                    .fill(cat.color)
+                    .frame(width: 14, height: 14)
+                    .opacity(1.0)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
+                    )
+            }
+
+            // External Apple calendars (up to 5 total combined)
+            let remainingSlots = max(0, 5 - categories.count)
+            if ekManager.isAuthorized {
+                ForEach(ekManager.ekCalendars.prefix(remainingSlots), id: \.calendarIdentifier) { cal in
+                    Circle()
+                        .fill(Color(cgColor: cal.cgColor))
+                        .frame(width: 14, height: 14)
+                        .opacity(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? 1.0 : 0.25)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
+                        )
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                ekManager.toggleCalendar(cal.calendarIdentifier)
+                            }
+                        }
                 }
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
     }
 
     // MARK: - Weekday Header
@@ -157,25 +183,177 @@ struct MonthView: View {
                         )
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
+                        .onTapGesture(count: 2) {
+                            // Double-tap to open event editor
+                            selectedDate = date
+                            showEventEditor = true
+                        }
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3)) {
-                                if selectedDate?.isSameDay(as: date) == true {
-                                    showDayPeek.toggle()
-                                } else {
-                                    selectedDate = date
-                                    showDayPeek = true
-                                }
+                                selectedDate = date
                             }
                         }
                         .onLongPressGesture {
-                            selectedDate = date
-                            showEventEditor = true
+                            withAnimation(.spring(response: 0.3)) {
+                                zoomedDate = date
+                            }
                         }
                     }
                 }
             }
         }
         .padding(.horizontal, 4)
+    }
+
+    // MARK: - Day Zoom Overlay
+
+    private func dayZoomOverlay(for date: Date) -> some View {
+        ZStack {
+            // Dimmed background
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.3)) {
+                        zoomedDate = nil
+                    }
+                }
+
+            // Zoomed day card
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(date.formatted(.dateTime.weekday(.wide).locale(Locale(identifier: "da_DK"))))
+                            .font(.title2.weight(.bold))
+                        Text(date.formatted(.dateTime.day().month(.wide).year().locale(Locale(identifier: "da_DK"))))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        zoomedDate = nil
+                        selectedDate = date
+                        showEventEditor = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .symbolRenderingMode(.hierarchical)
+                    }
+
+                    Button {
+                        withAnimation(.spring(response: 0.3)) { zoomedDate = nil }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+
+                Divider()
+
+                // Events
+                let dayEvents = displayEventsFor(date: date)
+                if dayEvents.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "calendar.badge.plus")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.tertiary)
+                        Text("Ingen begivenheder")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.vertical, 40)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            ForEach(dayEvents) { event in
+                                zoomEventRow(event: event)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if let source = event.sourceEvent {
+                                            zoomedDate = nil
+                                            editingEvent = source
+                                        }
+                                    }
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(maxHeight: screenHeight * 0.5)
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.2), radius: 20, y: 5)
+            .padding(.horizontal, 16)
+            .transition(.scale(scale: 0.8).combined(with: .opacity))
+        }
+    }
+
+    private func zoomEventRow(event: DisplayEvent) -> some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(event.color)
+                .frame(width: 5, height: 44)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 4) {
+                    Text(event.title)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+                    if event.isExternal {
+                        Image(systemName: "apple.logo")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    if event.isAllDay {
+                        Text("Hele dagen")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("\(event.startDate.timeString) – \(event.endDate.timeString)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if !event.location.isEmpty {
+                        HStack(spacing: 2) {
+                            Image(systemName: "location.fill")
+                                .font(.caption2)
+                            Text(event.location)
+                                .font(.subheadline)
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            Text(event.calendarName)
+                .font(.caption)
+                .foregroundStyle(event.color)
+
+            if !event.isExternal {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.primary.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - Helpers
@@ -201,5 +379,16 @@ struct MonthView: View {
         if let newMonth = Calendar.current.date(byAdding: .month, value: value, to: currentMonth) {
             currentMonth = newMonth
         }
+    }
+}
+
+// Platform-agnostic screen size helper
+private extension MonthView {
+    var screenHeight: CGFloat {
+        #if os(macOS)
+        NSScreen.main?.frame.height ?? 800
+        #else
+        UIScreen.main.bounds.height
+        #endif
     }
 }

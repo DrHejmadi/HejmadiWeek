@@ -9,6 +9,7 @@ final class EventKitManager {
     private(set) var isAuthorized = false
     private(set) var ekEvents: [EKEvent] = []
     private(set) var ekCalendars: [EKCalendar] = []
+    var disabledCalendarIDs: Set<String> = []
 
     private init() {
         checkAuthorization()
@@ -19,6 +20,7 @@ final class EventKitManager {
         isAuthorized = status == .fullAccess || status == .authorized
     }
 
+    @discardableResult
     func requestAccess() async -> Bool {
         do {
             let granted: Bool
@@ -51,11 +53,24 @@ final class EventKitManager {
         fetchEvents(from: start, to: end)
     }
 
+    func toggleCalendar(_ calendarID: String) {
+        if disabledCalendarIDs.contains(calendarID) {
+            disabledCalendarIDs.remove(calendarID)
+        } else {
+            disabledCalendarIDs.insert(calendarID)
+        }
+    }
+
+    func isCalendarEnabled(_ calendarID: String) -> Bool {
+        !disabledCalendarIDs.contains(calendarID)
+    }
+
     func eventsFor(date: Date) -> [DisplayEvent] {
         let dayStart = date.startOfDay
         let dayEnd = date.endOfDay
         return ekEvents
             .filter { event in
+                guard !disabledCalendarIDs.contains(event.calendar.calendarIdentifier) else { return false }
                 if event.isAllDay {
                     return event.startDate <= dayEnd && event.endDate >= dayStart
                 }

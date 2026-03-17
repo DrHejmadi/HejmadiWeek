@@ -15,7 +15,7 @@ struct MonthDayCell: View {
     }
 
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 1) {
             // Day number
             Text("\(date.dayOfMonth)")
                 .font(.system(size: 14, weight: isToday ? .bold : .medium))
@@ -29,15 +29,16 @@ struct MonthDayCell: View {
                     }
                 }
 
-            // WeekCal-style dots
-            if !allDisplayEvents.isEmpty {
-                eventDots
+            // Event titles as small text
+            if !allDisplayEvents.isEmpty && isCurrentMonth {
+                eventTitles
             }
 
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity)
+        .padding(.vertical, 2)
         .background(cellBackground)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
@@ -68,24 +69,28 @@ struct MonthDayCell: View {
         }
     }
 
-    // MARK: - Event Dots (WeekCal style)
+    // MARK: - Event Titles
 
-    private var eventDots: some View {
-        let maxDots = 4
-        let visibleEvents = Array(allDisplayEvents.prefix(maxDots))
-        let hasMore = allDisplayEvents.count > maxDots
-
-        return HStack(spacing: 3) {
-            ForEach(visibleEvents) { event in
-                Circle()
-                    .fill(event.color)
-                    .frame(width: 5, height: 5)
+    private var eventTitles: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(allDisplayEvents.prefix(3)) { event in
+                HStack(spacing: 2) {
+                    Circle()
+                        .fill(event.color)
+                        .frame(width: 4, height: 4)
+                    Text(event.title)
+                        .font(.system(size: 7))
+                        .lineLimit(1)
+                        .foregroundStyle(.primary.opacity(0.7))
+                }
             }
-            if hasMore {
-                Circle()
-                    .fill(Color.secondary.opacity(0.4))
-                    .frame(width: 5, height: 5)
+            if allDisplayEvents.count > 3 {
+                Text("+\(allDisplayEvents.count - 3)")
+                    .font(.system(size: 6))
+                    .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 2)
     }
 }
