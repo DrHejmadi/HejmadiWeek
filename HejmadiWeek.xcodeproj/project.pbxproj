@@ -13,6 +13,7 @@
 		3DF0F2FE453ABDD7A9F1B5D5 /* EventEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9D98644BAFA0310E3B4C90 /* EventEditorView.swift */; };
 		4B257529CC9B6584D471E67F /* TodoItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5433E0D495277AE5F206BC3D /* TodoItem.swift */; };
 		50EF5C42A5C33A949C042DE0 /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618B5410CF5836F5144A9AAB /* ColorExtension.swift */; };
+		6859E804D79666FEA1A38CAE /* FilterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BE6C54AC1922A472128952F /* FilterChip.swift */; };
 		68F44CADD8B57EAC1EBA09B4 /* CalendarEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BDC81F2DE6D8D1FE7335CD5 /* CalendarEvent.swift */; };
 		7A7F7977D4DAE72E13ED052A /* DayPeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2660BE272B880A3AFA06582 /* DayPeekView.swift */; };
 		7EF88BA3007AF6D0EFADC8A1 /* TodoListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD7AFFF7B607C795085CC20A /* TodoListView.swift */; };
@@ -20,6 +21,8 @@
 		88F44F03A07179BF01E44319 /* AgendaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D189ED01B44365EF54CC29 /* AgendaView.swift */; };
 		9127DB226D6FA92FF45803EC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FB73ED3E3B1A0560E6C440 /* SettingsView.swift */; };
 		9EFD318FBF4AC83D7624070D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE3E25F14D75BF7A43C4ECD8 /* Assets.xcassets */; };
+		BC55AEC222A1C1AFE292EC1B /* TodoRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E40131BBAF8802196877A8 /* TodoRowView.swift */; };
+		D165FDE0EFC0693731D853DA /* TodoEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290E4D2DDB2E6B2C8730F1EF /* TodoEditView.swift */; };
 		D30F35DD0B85E952B4A5DBE2 /* MonthDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D935813AAC7115594A7A2E10 /* MonthDayCell.swift */; };
 		E0EC710C9ACAB086B0B68CE9 /* EventKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F94CCCD520D72000359F57 /* EventKitManager.swift */; };
 		E7852460B3288678ACF54471 /* WeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13BC949AF3DB50D4E26ADF6B /* WeekView.swift */; };
@@ -27,9 +30,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		00E40131BBAF8802196877A8 /* TodoRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoRowView.swift; sourceTree = "<group>"; };
 		0DBFCF56B95A0516FB3CC53B /* HejmadiWeekApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HejmadiWeekApp.swift; sourceTree = "<group>"; };
 		13BC949AF3DB50D4E26ADF6B /* WeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekView.swift; sourceTree = "<group>"; };
+		290E4D2DDB2E6B2C8730F1EF /* TodoEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoEditView.swift; sourceTree = "<group>"; };
 		2AD44FFEC4EC23169421F68F /* MonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthView.swift; sourceTree = "<group>"; };
+		2BE6C54AC1922A472128952F /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
 		43399C641047C487482FA366 /* CalendarCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarCategory.swift; sourceTree = "<group>"; };
 		5433E0D495277AE5F206BC3D /* TodoItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoItem.swift; sourceTree = "<group>"; };
 		5BDC81F2DE6D8D1FE7335CD5 /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
@@ -114,7 +120,10 @@
 		895D05EFE78214C157933E24 /* TodoView */ = {
 			isa = PBXGroup;
 			children = (
+				2BE6C54AC1922A472128952F /* FilterChip.swift */,
+				290E4D2DDB2E6B2C8730F1EF /* TodoEditView.swift */,
 				AD7AFFF7B607C795085CC20A /* TodoListView.swift */,
+				00E40131BBAF8802196877A8 /* TodoRowView.swift */,
 			);
 			path = TodoView;
 			sourceTree = "<group>";
@@ -264,12 +273,15 @@
 				7A7F7977D4DAE72E13ED052A /* DayPeekView.swift in Sources */,
 				3DF0F2FE453ABDD7A9F1B5D5 /* EventEditorView.swift in Sources */,
 				E0EC710C9ACAB086B0B68CE9 /* EventKitManager.swift in Sources */,
+				6859E804D79666FEA1A38CAE /* FilterChip.swift in Sources */,
 				F240EF01C65DB64DAA666DC3 /* HejmadiWeekApp.swift in Sources */,
 				D30F35DD0B85E952B4A5DBE2 /* MonthDayCell.swift in Sources */,
 				3B67CD1D5CC8382F935DDB5E /* MonthView.swift in Sources */,
 				9127DB226D6FA92FF45803EC /* SettingsView.swift in Sources */,
+				D165FDE0EFC0693731D853DA /* TodoEditView.swift in Sources */,
 				4B257529CC9B6584D471E67F /* TodoItem.swift in Sources */,
 				7EF88BA3007AF6D0EFADC8A1 /* TodoListView.swift in Sources */,
+				BC55AEC222A1C1AFE292EC1B /* TodoRowView.swift in Sources */,
 				E7852460B3288678ACF54471 /* WeekView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -311,7 +323,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -379,7 +391,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_NS_ASSERTIONS = NO;

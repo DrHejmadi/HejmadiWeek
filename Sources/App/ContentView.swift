@@ -20,6 +20,7 @@ enum AppTab: String, CaseIterable {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .month
+    @State private var navigationPath = NavigationPath()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
@@ -43,7 +44,7 @@ struct ContentView: View {
                     .tabItem { Label("Måned", systemImage: "calendar") }
                     .tag(AppTab.month)
 
-                NavigationStack {
+                NavigationStack(path: $navigationPath) {
                     WeekView()
                         .navigationTitle("Uge")
                 }
@@ -99,7 +100,7 @@ struct ContentView: View {
     }
 
     private var detailView: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             viewForTab(selectedTab)
                 .navigationTitle(selectedTab.rawValue)
         }

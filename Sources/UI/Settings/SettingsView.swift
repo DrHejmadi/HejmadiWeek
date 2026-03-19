@@ -1,12 +1,23 @@
 import SwiftUI
 import SwiftData
+import EventKit
+
+enum DayCellMode: String, CaseIterable {
+    case dots = "Prikker"
+    case titles = "Titler"
+    case bars = "Farvebjælker"
+}
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \CalendarCategory.sortOrder) private var categories: [CalendarCategory]
     @AppStorage("weekStartsOnMonday") private var weekStartsOnMonday = true
     @AppStorage("showWeekNumbers") private var showWeekNumbers = true
     @AppStorage("defaultView") private var defaultView = "month"
     @AppStorage("defaultAlertMinutes") private var defaultAlertMinutes = 15
+    @AppStorage("dayCellMode") private var dayCellMode = "titles"
+    @AppStorage("showHeatmap") private var showHeatmap = true
+    @State private var ekManager = EventKitManager.shared
 
     var body: some View {
         Form {
@@ -25,6 +36,41 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                if ekManager.isAuthorized {
+                    ForEach(ekManager.ekCalendars, id: \.calendarIdentifier) { cal in
+                        HStack {
+                            Circle()
+                                .fill(Color(cgColor: cal.cgColor))
+                                .frame(width: 10, height: 10)
+                            Text(cal.title)
+                            Spacer()
+                            Image(systemName: "apple.logo")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Toggle("", isOn: Binding(
+                                get: { ekManager.isCalendarEnabled(cal.calendarIdentifier) },
+                                set: { _ in ekManager.toggleCalendar(cal.calendarIdentifier) }
+                            ))
+                            .labelsHidden()
+                        }
+                    }
+                } else {
+                    Button {
+                        Task { await ekManager.requestAccess() }
+                    } label: {
+                        Label("Giv adgang til Apple Kalender", systemImage: "calendar.badge.plus")
+                    }
+                }
+            }
+
+            Section("Månedsvisning") {
+                Picker("Dagcelle-visning", selection: $dayCellMode) {
+                    ForEach(DayCellMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.rawValue).tag(mode.rawValue)
+                    }
+                }
+                Toggle("Vis heatmap (travlhed)", isOn: $showHeatmap)
             }
 
             Section("Visning") {
@@ -52,7 +98,7 @@ struct SettingsView: View {
                 HStack {
                     Text("Version")
                     Spacer()
-                    Text("1.0.0")
+                    Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"))")
                         .foregroundStyle(.secondary)
                 }
                 HStack {
@@ -67,6 +113,11 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(minWidth: 400, minHeight: 300)
         #endif
+        .onAppear {
+            if ekManager.isAuthorized {
+                ekManager.fetchEventsForMonth(containing: Date())
+            }
+        }
     }
 }
 

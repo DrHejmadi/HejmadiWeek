@@ -6,7 +6,7 @@ struct AgendaView: View {
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @State private var showEventEditor = false
     @State private var editingEvent: CalendarEvent?
-    var ekManager: EventKitManager = .shared
+    @State private var ekManager = EventKitManager.shared
 
     var body: some View {
         List {
@@ -60,9 +60,10 @@ struct AgendaView: View {
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { showEventEditor = true } label: {
-                    Image(systemName: "plus")
+                Button("Tilføj begivenhed", systemImage: "plus") {
+                    showEventEditor = true
                 }
+                .labelStyle(.iconOnly)
             }
         }
         .sheet(isPresented: $showEventEditor) {
@@ -82,7 +83,6 @@ struct AgendaView: View {
     }
 
     private var groupedDisplayEvents: [(date: Date, events: [DisplayEvent])] {
-        // Internal events
         let upcomingInternal = allEvents.filter { $0.endDate >= Date().startOfDay }
         var dateEventPairs: [(date: Date, event: DisplayEvent)] = []
 
@@ -98,9 +98,13 @@ struct AgendaView: View {
             }
         }
 
-        // External EventKit events
+        // External EventKit events (respects disabled calendar filter)
         let externalEvents = ekManager.ekEvents
-            .filter { ($0.endDate ?? Date()) >= Date().startOfDay }
+            .filter { event in
+                guard let endDate = event.endDate else { return false }
+                guard endDate >= Date().startOfDay else { return false }
+                return !ekManager.disabledCalendarIDs.contains(event.calendar.calendarIdentifier)
+            }
         for ekEvent in externalEvents {
             let displayEvent = DisplayEvent(ekEvent: ekEvent)
             let start = max(ekEvent.startDate.startOfDay, Date().startOfDay)
@@ -141,6 +145,7 @@ struct AgendaDisplayEventRow: View {
                         Image(systemName: "apple.logo")
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
+                            .accessibilityLabel("Apple Kalender")
                     }
                 }
 
@@ -164,6 +169,12 @@ struct AgendaDisplayEventRow: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
+
+                    if event.attendeeCount > 0 {
+                        Label("\(event.attendeeCount)", systemImage: "person.2")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -180,5 +191,6 @@ struct AgendaDisplayEventRow: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 }

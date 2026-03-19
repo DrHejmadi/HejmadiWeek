@@ -367,6 +367,29 @@ struct MonthView: View {
                         }
                         .foregroundStyle(.secondary)
                     }
+
+                    if event.attendeeCount > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "person.2.fill")
+                                .font(.caption2)
+                            Text("\(event.attendeeCount)")
+                                .font(.subheadline)
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let url = event.url {
+                    Link(destination: url) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "link")
+                                .font(.caption2)
+                            Text(url.host ?? url.absoluteString)
+                                .font(.caption)
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(.blue)
+                    }
                 }
             }
 

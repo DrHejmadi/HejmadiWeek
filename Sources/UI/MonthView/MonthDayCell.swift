@@ -63,6 +63,17 @@ struct MonthDayCell: View {
         Group {
             if isSelected {
                 Color.accentColor.opacity(0.08)
+            } else if isCurrentMonth {
+                let count = allDisplayEvents.count
+                if count >= 5 {
+                    Color.blue.opacity(0.12)
+                } else if count >= 3 {
+                    Color.blue.opacity(0.07)
+                } else if count >= 1 {
+                    Color.blue.opacity(0.03)
+                } else {
+                    Color.clear
+                }
             } else {
                 Color.clear
             }

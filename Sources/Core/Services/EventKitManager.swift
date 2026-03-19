@@ -93,6 +93,8 @@ struct DisplayEvent: Identifiable {
     let isExternal: Bool
     let sourceEvent: CalendarEvent?
     let ekEventID: String?
+    let attendeeCount: Int
+    let url: URL?
 
     init(event: CalendarEvent) {
         self.id = event.id.uuidString
@@ -107,6 +109,8 @@ struct DisplayEvent: Identifiable {
         self.isExternal = false
         self.sourceEvent = event
         self.ekEventID = nil
+        self.attendeeCount = 0
+        self.url = nil
     }
 
     init(ekEvent: EKEvent) {
@@ -122,6 +126,8 @@ struct DisplayEvent: Identifiable {
         self.isExternal = true
         self.sourceEvent = nil
         self.ekEventID = ekEvent.eventIdentifier
+        self.attendeeCount = ekEvent.attendees?.count ?? 0
+        self.url = ekEvent.url
     }
 
     var durationMinutes: Int {
