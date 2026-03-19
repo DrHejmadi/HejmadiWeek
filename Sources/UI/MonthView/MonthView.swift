@@ -11,9 +11,12 @@ struct MonthView: View {
     @State private var showCalendarPicker = false
     @State private var ekManager = EventKitManager.shared
     @State private var zoomHeight: CGFloat = 400
+    var onSwitchToWeek: ((Date) -> Void)?
 
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @Query(sort: \CalendarCategory.sortOrder) private var categories: [CalendarCategory]
+    @AppStorage("dayCellMode") private var dayCellMode = "titles"
+    @AppStorage("showHeatmap") private var showHeatmap = true
 
     private let weekdays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
 
@@ -62,6 +65,15 @@ struct MonthView: View {
                         withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
                     } else if value.translation.height > 50 {
                         withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
+                    }
+                }
+        )
+        .gesture(
+            MagnificationGesture()
+                .onEnded { scale in
+                    if scale > 1.5 {
+                        // Pinch out = zoom in = go to week view
+                        onSwitchToWeek?(selectedDate ?? Date())
                     }
                 }
         )
@@ -208,7 +220,9 @@ struct MonthView: View {
                             isToday: date.isToday,
                             events: allEvents.filter { Calendar.current.isDate($0.startDate, inSameDayAs: date) },
                             categories: categories,
-                            displayEvents: cachedEvents
+                            displayEvents: cachedEvents,
+                            dayCellMode: dayCellMode,
+                            showHeatmap: showHeatmap
                         )
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())

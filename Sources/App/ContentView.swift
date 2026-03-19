@@ -40,7 +40,9 @@ struct ContentView: View {
         } else {
             TabView(selection: $selectedTab) {
                 // Month tab — no navigation bar, full screen
-                MonthView()
+                MonthView(onSwitchToWeek: { _ in
+                    withAnimation { selectedTab = .week }
+                })
                     .tabItem { Label("Måned", systemImage: "calendar") }
                     .tag(AppTab.month)
 
@@ -110,7 +112,9 @@ struct ContentView: View {
     private func viewForTab(_ tab: AppTab) -> some View {
         switch tab {
         case .month:
-            MonthView()
+            MonthView(onSwitchToWeek: { _ in
+                withAnimation { selectedTab = .week }
+            })
         case .week:
             WeekView()
         case .agenda:

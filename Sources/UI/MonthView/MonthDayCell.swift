@@ -8,6 +8,8 @@ struct MonthDayCell: View {
     let events: [CalendarEvent]
     let categories: [CalendarCategory]
     var displayEvents: [DisplayEvent] = []
+    var dayCellMode: String = "titles"
+    var showHeatmap: Bool = true
 
     private var allDisplayEvents: [DisplayEvent] {
         if !displayEvents.isEmpty { return displayEvents }
@@ -29,9 +31,9 @@ struct MonthDayCell: View {
                     }
                 }
 
-            // Event titles as small text
+            // Event indicators
             if !allDisplayEvents.isEmpty && isCurrentMonth {
-                eventTitles
+                eventIndicators
             }
 
             Spacer(minLength: 0)
@@ -57,13 +59,13 @@ struct MonthDayCell: View {
         }
     }
 
-    // MARK: - Cell Background
+    // MARK: - Cell Background (Heatmap)
 
     private var cellBackground: some View {
         Group {
             if isSelected {
                 Color.accentColor.opacity(0.08)
-            } else if isCurrentMonth {
+            } else if isCurrentMonth && showHeatmap {
                 let count = allDisplayEvents.count
                 if count >= 5 {
                     Color.blue.opacity(0.12)
@@ -80,9 +82,57 @@ struct MonthDayCell: View {
         }
     }
 
-    // MARK: - Event Titles
+    // MARK: - Event Indicators (configurable mode)
 
-    private var eventTitles: some View {
+    @ViewBuilder
+    private var eventIndicators: some View {
+        switch dayCellMode {
+        case "dots":
+            dotsMode
+        case "bars":
+            barsMode
+        case "titles":
+            titlesMode
+        default:
+            titlesMode
+        }
+    }
+
+    // Mode: Colored dots only
+    private var dotsMode: some View {
+        HStack(spacing: 2) {
+            ForEach(allDisplayEvents.prefix(5)) { event in
+                Circle()
+                    .fill(event.color)
+                    .frame(width: 4, height: 4)
+            }
+            if allDisplayEvents.count > 5 {
+                Text("+\(allDisplayEvents.count - 5)")
+                    .font(.system(size: 5))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // Mode: Colored bars
+    private var barsMode: some View {
+        VStack(spacing: 1) {
+            ForEach(allDisplayEvents.prefix(4)) { event in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(event.color)
+                    .frame(height: 3)
+            }
+            if allDisplayEvents.count > 4 {
+                Text("+\(allDisplayEvents.count - 4)")
+                    .font(.system(size: 5))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+
+    // Mode: Event titles with dots
+    private var titlesMode: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(allDisplayEvents.prefix(3)) { event in
                 HStack(spacing: 2) {
