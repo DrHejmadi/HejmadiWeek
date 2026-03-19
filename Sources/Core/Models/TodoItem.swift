@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class TodoItem {
+
     var id: UUID = UUID()
     var title: String = ""
     var notes: String = ""
@@ -15,7 +16,10 @@ final class TodoItem {
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
+    @Relationship(deleteRule: .nullify)
     var category: CalendarCategory?
+
+    @Relationship(deleteRule: .nullify)
     var linkedEvent: CalendarEvent?
 
     init(

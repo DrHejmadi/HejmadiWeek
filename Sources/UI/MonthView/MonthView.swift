@@ -9,27 +9,50 @@ struct MonthView: View {
     @State private var editingEvent: CalendarEvent?
     @State private var zoomedDate: Date?
     @State private var showCalendarPicker = false
-    var ekManager: EventKitManager = .shared
+    @State private var ekManager = EventKitManager.shared
+    @State private var zoomHeight: CGFloat = 400
 
     @Query(sort: \CalendarEvent.startDate) private var allEvents: [CalendarEvent]
     @Query(sort: \CalendarCategory.sortOrder) private var categories: [CalendarCategory]
 
     private let weekdays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
 
-    var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                monthHeader
-                    .padding(.top, 8)
-                weekdayHeader
-                monthGrid
-                    .frame(maxHeight: .infinity)
-                Spacer(minLength: 0)
-            }
+    // Cached event lookup — computed once per render, not per cell
+    private var eventsByDate: [String: [DisplayEvent]] {
+        var dict: [String: [DisplayEvent]] = [:]
+        let gridDates = currentMonth.monthGridDates()
+        for date in gridDates {
+            let key = date.dateCacheKey
+            let internal_ = allEvents.filter { event in
+                if event.isAllDay {
+                    return Calendar.current.isDate(event.startDate, inSameDayAs: date) ||
+                           (event.startDate <= date.endOfDay && event.endDate >= date.startOfDay)
+                }
+                return Calendar.current.isDate(event.startDate, inSameDayAs: date) ||
+                       (event.startDate < date.endOfDay && event.endDate > date.startOfDay)
+            }.map { DisplayEvent(event: $0) }
+            let external = ekManager.eventsFor(date: date)
+            dict[key] = (internal_ + external).sorted { $0.startDate < $1.startDate }
+        }
+        return dict
+    }
 
-            // Day zoom overlay (long-press / hover)
-            if let zDate = zoomedDate {
-                dayZoomOverlay(for: zDate)
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                VStack(spacing: 0) {
+                    monthHeader
+                        .padding(.top, 8)
+                    weekdayHeader
+                    monthGrid
+                        .frame(maxHeight: .infinity)
+                    Spacer(minLength: 0)
+                }
+
+                // Day zoom overlay (long-press / hover)
+                if let zDate = zoomedDate {
+                    dayZoomOverlay(for: zDate, screenHeight: geo.size.height)
+                }
             }
         }
         .gesture(
@@ -65,18 +88,20 @@ struct MonthView: View {
 
     private var monthHeader: some View {
         HStack(spacing: 12) {
-            Button { withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) } } label: {
-                Image(systemName: "chevron.left")
-                    .font(.title3.weight(.semibold))
+            Button("Forrige måned", systemImage: "chevron.left") {
+                withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
             }
+            .labelStyle(.iconOnly)
+            .font(.title3.weight(.semibold))
 
             Text(currentMonth.monthName)
                 .font(.title.weight(.bold))
 
-            Button { withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) } } label: {
-                Image(systemName: "chevron.right")
-                    .font(.title3.weight(.semibold))
+            Button("Næste måned", systemImage: "chevron.right") {
+                withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
             }
+            .labelStyle(.iconOnly)
+            .font(.title3.weight(.semibold))
 
             Spacer()
 
@@ -106,30 +131,33 @@ struct MonthView: View {
                 Circle()
                     .fill(cat.color)
                     .frame(width: 14, height: 14)
-                    .opacity(1.0)
                     .overlay(
                         Circle()
                             .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
                     )
+                    .accessibilityLabel("Kategori: \(cat.name)")
             }
 
             // External Apple calendars (up to 5 total combined)
             let remainingSlots = max(0, 5 - categories.count)
             if ekManager.isAuthorized {
                 ForEach(ekManager.ekCalendars.prefix(remainingSlots), id: \.calendarIdentifier) { cal in
-                    Circle()
-                        .fill(Color(cgColor: cal.cgColor))
-                        .frame(width: 14, height: 14)
-                        .opacity(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? 1.0 : 0.25)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
-                        )
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                ekManager.toggleCalendar(cal.calendarIdentifier)
-                            }
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            ekManager.toggleCalendar(cal.calendarIdentifier)
                         }
+                    } label: {
+                        Circle()
+                            .fill(Color(cgColor: cal.cgColor))
+                            .frame(width: 14, height: 14)
+                            .opacity(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? 1.0 : 0.25)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(cal.title): \(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? "aktiv" : "deaktiveret")")
                 }
             }
         }
@@ -172,19 +200,19 @@ struct MonthView: View {
                         .frame(width: 30)
 
                     ForEach(week, id: \.self) { date in
+                        let cachedEvents = eventsByDate[date.dateCacheKey] ?? []
                         MonthDayCell(
                             date: date,
                             isCurrentMonth: date.isSameMonth(as: currentMonth),
                             isSelected: selectedDate?.isSameDay(as: date) == true,
                             isToday: date.isToday,
-                            events: eventsFor(date: date),
+                            events: allEvents.filter { Calendar.current.isDate($0.startDate, inSameDayAs: date) },
                             categories: categories,
-                            displayEvents: displayEventsFor(date: date)
+                            displayEvents: cachedEvents
                         )
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) {
-                            // Double-tap to open event editor
                             selectedDate = date
                             showEventEditor = true
                         }
@@ -198,6 +226,8 @@ struct MonthView: View {
                                 zoomedDate = date
                             }
                         }
+                        .accessibilityLabel(date.formatted(.dateTime.day().month(.wide)))
+                        .accessibilityHint(cachedEvents.isEmpty ? "Ingen begivenheder" : "\(cachedEvents.count) begivenheder")
                     }
                 }
             }
@@ -207,8 +237,10 @@ struct MonthView: View {
 
     // MARK: - Day Zoom Overlay
 
-    private func dayZoomOverlay(for date: Date) -> some View {
-        ZStack {
+    private func dayZoomOverlay(for date: Date, screenHeight: CGFloat) -> some View {
+        let dayEvents = eventsByDate[date.dateCacheKey] ?? []
+
+        return ZStack {
             // Dimmed background
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
@@ -217,6 +249,8 @@ struct MonthView: View {
                         zoomedDate = nil
                     }
                 }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel("Luk dagsvisning")
 
             // Zoomed day card
             VStack(spacing: 0) {
@@ -232,31 +266,28 @@ struct MonthView: View {
 
                     Spacer()
 
-                    Button {
+                    Button("Tilføj begivenhed", systemImage: "plus.circle.fill") {
                         zoomedDate = nil
                         selectedDate = date
                         showEventEditor = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
                     }
+                    .labelStyle(.iconOnly)
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
 
-                    Button {
+                    Button("Luk", systemImage: "xmark.circle.fill") {
                         withAnimation(.spring(response: 0.3)) { zoomedDate = nil }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.secondary)
                     }
+                    .labelStyle(.iconOnly)
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
                 }
                 .padding()
 
                 Divider()
 
                 // Events
-                let dayEvents = displayEventsFor(date: date)
                 if dayEvents.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "calendar.badge.plus")
@@ -311,6 +342,7 @@ struct MonthView: View {
                         Image(systemName: "apple.logo")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .accessibilityLabel("Apple Kalender")
                     }
                 }
 
@@ -354,26 +386,10 @@ struct MonthView: View {
         .padding(.vertical, 8)
         .background(Color.primary.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Helpers
-
-    private func eventsFor(date: Date) -> [CalendarEvent] {
-        allEvents.filter { event in
-            if event.isAllDay {
-                return Calendar.current.isDate(event.startDate, inSameDayAs: date) ||
-                       (event.startDate <= date.endOfDay && event.endDate >= date.startOfDay)
-            }
-            return Calendar.current.isDate(event.startDate, inSameDayAs: date) ||
-                   (event.startDate < date.endOfDay && event.endDate > date.startOfDay)
-        }
-    }
-
-    private func displayEventsFor(date: Date) -> [DisplayEvent] {
-        let internal_ = eventsFor(date: date).map { DisplayEvent(event: $0) }
-        let external = ekManager.eventsFor(date: date)
-        return (internal_ + external).sorted { $0.startDate < $1.startDate }
-    }
 
     private func advanceMonth(by value: Int) {
         if let newMonth = Calendar.current.date(byAdding: .month, value: value, to: currentMonth) {
@@ -382,13 +398,11 @@ struct MonthView: View {
     }
 }
 
-// Platform-agnostic screen size helper
-private extension MonthView {
-    var screenHeight: CGFloat {
-        #if os(macOS)
-        NSScreen.main?.frame.height ?? 800
-        #else
-        UIScreen.main.bounds.height
-        #endif
+// Cache key extension
+private extension Date {
+    var dateCacheKey: String {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month, .day], from: self)
+        return "\(comps.year!)-\(comps.month!)-\(comps.day!)"
     }
 }

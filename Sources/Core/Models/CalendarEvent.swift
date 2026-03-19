@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class CalendarEvent {
+
     var id: UUID = UUID()
     var title: String = ""
     var notes: String = ""
@@ -18,6 +19,7 @@ final class CalendarEvent {
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
+    @Relationship(deleteRule: .nullify)
     var category: CalendarCategory?
 
     @Relationship(deleteRule: .nullify, inverse: \TodoItem.linkedEvent)

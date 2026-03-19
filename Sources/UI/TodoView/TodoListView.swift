@@ -168,12 +168,11 @@ struct TodoListView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .onSubmit { addQuickTodo() }
 
-            Button(action: addQuickTodo) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title2)
-                    .symbolRenderingMode(.hierarchical)
-            }
-            .disabled(newTodoTitle.isEmpty)
+            Button("Tilføj opgave", systemImage: "plus.circle.fill", action: addQuickTodo)
+                .labelStyle(.iconOnly)
+                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .disabled(newTodoTitle.isEmpty)
         }
         .padding(.horizontal)
         .padding(.bottom, 8)
@@ -228,28 +227,16 @@ struct TodoListView: View {
 
     private func deleteTodos(at offsets: IndexSet) {
         let todosToDelete = offsets.map { pendingTodos[$0] }
-        for todo in todosToDelete {
-            // Keep the last deleted for undo
-            recentlyDeleted = TodoItem(
-                title: todo.title,
-                notes: todo.notes,
-                dueDate: todo.dueDate,
-                isCompleted: todo.isCompleted,
-                priority: todo.priority,
-                category: todo.category
-            )
-            modelContext.delete(todo)
-        }
-        withAnimation { showUndoBanner = true }
-        // Auto-hide after 5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            withAnimation { showUndoBanner = false }
-        }
+        performDelete(todosToDelete)
     }
 
     private func deleteCompletedTodos(at offsets: IndexSet) {
         let todosToDelete = offsets.map { completedTodos[$0] }
-        for todo in todosToDelete {
+        performDelete(todosToDelete)
+    }
+
+    private func performDelete(_ todos: [TodoItem]) {
+        for todo in todos {
             recentlyDeleted = TodoItem(
                 title: todo.title,
                 notes: todo.notes,
@@ -261,7 +248,8 @@ struct TodoListView: View {
             modelContext.delete(todo)
         }
         withAnimation { showUndoBanner = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+        Task {
+            try? await Task.sleep(for: .seconds(5))
             withAnimation { showUndoBanner = false }
         }
     }
