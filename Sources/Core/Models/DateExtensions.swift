@@ -41,6 +41,13 @@ extension Date {
     var monthName: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "da_DK")
+        formatter.dateFormat = "MMM"
+        return formatter.string(from: self).capitalized
+    }
+
+    var monthNameFull: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "da_DK")
         formatter.dateFormat = "MMMM yyyy"
         return formatter.string(from: self).capitalized
     }

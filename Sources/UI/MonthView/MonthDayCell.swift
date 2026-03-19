@@ -10,6 +10,7 @@ struct MonthDayCell: View {
     var displayEvents: [DisplayEvent] = []
     var dayCellMode: String = "titles"
     var showHeatmap: Bool = true
+    var showEventsOutsideMonth: Bool = false
 
     private var allDisplayEvents: [DisplayEvent] {
         if !displayEvents.isEmpty { return displayEvents }
@@ -31,9 +32,10 @@ struct MonthDayCell: View {
                     }
                 }
 
-            // Event indicators
-            if !allDisplayEvents.isEmpty && isCurrentMonth {
+            // Event indicators — show for all days (including prev/next month)
+            if !allDisplayEvents.isEmpty && (isCurrentMonth || showEventsOutsideMonth) {
                 eventIndicators
+                    .opacity(isCurrentMonth ? 1.0 : 0.4)
             }
 
             Spacer(minLength: 0)

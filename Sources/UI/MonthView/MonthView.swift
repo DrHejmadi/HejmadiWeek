@@ -51,6 +51,26 @@ struct MonthView: View {
                         .frame(maxHeight: .infinity)
                     Spacer(minLength: 0)
                 }
+                .gesture(
+                    DragGesture(minimumDistance: 50)
+                        .onEnded { value in
+                            // Horizontal swipe = change month
+                            if abs(value.translation.width) > abs(value.translation.height) {
+                                if value.translation.width < -50 {
+                                    withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
+                                } else if value.translation.width > 50 {
+                                    withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
+                                }
+                            } else {
+                                // Vertical swipe = also change month
+                                if value.translation.height < -50 {
+                                    withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
+                                } else if value.translation.height > 50 {
+                                    withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
+                                }
+                            }
+                        }
+                )
 
                 // Day zoom overlay (long-press / hover)
                 if let zDate = zoomedDate {
@@ -59,20 +79,9 @@ struct MonthView: View {
             }
         }
         .gesture(
-            DragGesture(minimumDistance: 50)
-                .onEnded { value in
-                    if value.translation.height < -50 {
-                        withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
-                    } else if value.translation.height > 50 {
-                        withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
-                    }
-                }
-        )
-        .gesture(
             MagnificationGesture()
                 .onEnded { scale in
                     if scale > 1.5 {
-                        // Pinch out = zoom in = go to week view
                         onSwitchToWeek?(selectedDate ?? Date())
                     }
                 }
@@ -129,7 +138,7 @@ struct MonthView: View {
                     .clipShape(Capsule())
             }
 
-            // Calendar filter circles
+            // Calendar filter circles — double size (28pt) with larger tap target
             calendarFilterButtons
         }
         .padding(.horizontal, 12)
@@ -137,12 +146,12 @@ struct MonthView: View {
     }
 
     private var calendarFilterButtons: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             // Internal categories
             ForEach(categories.prefix(5)) { cat in
                 Circle()
                     .fill(cat.color)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 28, height: 28)
                     .overlay(
                         Circle()
                             .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
@@ -161,7 +170,7 @@ struct MonthView: View {
                     } label: {
                         Circle()
                             .fill(Color(cgColor: cal.cgColor))
-                            .frame(width: 14, height: 14)
+                            .frame(width: 28, height: 28)
                             .opacity(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? 1.0 : 0.25)
                             .overlay(
                                 Circle()
@@ -213,16 +222,19 @@ struct MonthView: View {
 
                     ForEach(week, id: \.self) { date in
                         let cachedEvents = eventsByDate[date.dateCacheKey] ?? []
+                        let isCurrentMonth = date.isSameMonth(as: currentMonth)
                         MonthDayCell(
                             date: date,
-                            isCurrentMonth: date.isSameMonth(as: currentMonth),
+                            isCurrentMonth: isCurrentMonth,
                             isSelected: selectedDate?.isSameDay(as: date) == true,
                             isToday: date.isToday,
                             events: allEvents.filter { Calendar.current.isDate($0.startDate, inSameDayAs: date) },
                             categories: categories,
                             displayEvents: cachedEvents,
                             dayCellMode: dayCellMode,
-                            showHeatmap: showHeatmap
+                            showHeatmap: showHeatmap,
+                            // Show events from prev/next months too
+                            showEventsOutsideMonth: true
                         )
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
@@ -338,6 +350,29 @@ struct MonthView: View {
             .shadow(color: .black.opacity(0.2), radius: 20, y: 5)
             .padding(.horizontal, 16)
             .transition(.scale(scale: 0.8).combined(with: .opacity))
+            .gesture(
+                DragGesture(minimumDistance: 50)
+                    .onEnded { value in
+                        // Swipe left/right on zoom = navigate days
+                        if abs(value.translation.width) > abs(value.translation.height) {
+                            withAnimation(.spring(response: 0.3)) {
+                                if value.translation.width < -50 {
+                                    // Swipe left = next day
+                                    if let next = Calendar.current.date(byAdding: .day, value: 1, to: date) {
+                                        zoomedDate = next
+                                        selectedDate = next
+                                    }
+                                } else if value.translation.width > 50 {
+                                    // Swipe right = previous day
+                                    if let prev = Calendar.current.date(byAdding: .day, value: -1, to: date) {
+                                        zoomedDate = prev
+                                        selectedDate = prev
+                                    }
+                                }
+                            }
+                        }
+                    }
+            )
         }
     }
 
