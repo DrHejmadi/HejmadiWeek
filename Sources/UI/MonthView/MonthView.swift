@@ -214,6 +214,7 @@ struct MonthView: View {
 
         return VStack(spacing: 1) {
             ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
+                let weekContainsToday = week.contains { $0.isToday }
                 HStack(spacing: 0) {
                     Text("\(week.first?.weekNumber ?? 0)")
                         .font(.caption2)
@@ -256,6 +257,12 @@ struct MonthView: View {
                         .accessibilityHint(cachedEvents.isEmpty ? "Ingen begivenheder" : "\(cachedEvents.count) begivenheder")
                     }
                 }
+                .background(
+                    weekContainsToday
+                        ? Color.pink.opacity(0.06)
+                        : Color.clear
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 4))
             }
         }
         .padding(.horizontal, 4)
