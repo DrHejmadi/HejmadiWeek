@@ -230,7 +230,6 @@
 				};
 			};
 			buildConfigurationList = AECCCD7496A1157FC40037FF /* Build configuration list for PBXProject "HejmadiWeek" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -240,6 +239,7 @@
 			mainGroup = 742AF7FD996173A01B910118;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+			productRefGroup = E7C652ACBCE83820CE7B824C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -323,7 +323,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 13;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -391,7 +391,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 13;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = LB2RAFK9K9;
 				ENABLE_NS_ASSERTIONS = NO;

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import EventKit
 
 struct MonthView: View {
     @Environment(\.modelContext) private var modelContext
@@ -9,6 +10,7 @@ struct MonthView: View {
     @State private var editingEvent: CalendarEvent?
     @State private var zoomedDate: Date?
     @State private var showCalendarPicker = false
+    @State private var showFilterPopover = false
     @State private var ekManager = EventKitManager.shared
     @State private var zoomHeight: CGFloat = 400
     var onSwitchToWeek: ((Date) -> Void)?
@@ -45,7 +47,7 @@ struct MonthView: View {
             ZStack {
                 VStack(spacing: 0) {
                     monthHeader
-                        .padding(.top, 8)
+                        .padding(.top, 4)
                     weekdayHeader
                     monthGrid
                         .frame(maxHeight: .infinity)
@@ -105,24 +107,30 @@ struct MonthView: View {
         }
     }
 
-    // MARK: - Month Header
+    // MARK: - Month Header (compact)
+
+    private var monthHeaderText: String {
+        let cal = Calendar.current
+        let isCurrentYear = cal.component(.year, from: currentMonth) == cal.component(.year, from: Date())
+        return isCurrentYear ? currentMonth.monthName : currentMonth.monthNameFull
+    }
 
     private var monthHeader: some View {
-        HStack(spacing: 12) {
-            Button("Forrige måned", systemImage: "chevron.left") {
+        HStack(spacing: 8) {
+            Button("Forrige", systemImage: "chevron.left") {
                 withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
             }
             .labelStyle(.iconOnly)
-            .font(.title3.weight(.semibold))
+            .font(.body.weight(.semibold))
 
-            Text(currentMonth.monthName)
-                .font(.title.weight(.bold))
+            Text(monthHeaderText)
+                .font(.headline.weight(.bold))
 
-            Button("Næste måned", systemImage: "chevron.right") {
+            Button("Næste", systemImage: "chevron.right") {
                 withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
             }
             .labelStyle(.iconOnly)
-            .font(.title3.weight(.semibold))
+            .font(.body.weight(.semibold))
 
             Spacer()
 
@@ -131,57 +139,35 @@ struct MonthView: View {
                 selectedDate = Date()
             } label: {
                 Text("I dag")
-                    .font(.caption.weight(.medium))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
                     .background(Color.accentColor.opacity(0.12))
                     .clipShape(Capsule())
             }
 
-            // Calendar filter circles — double size (28pt) with larger tap target
-            calendarFilterButtons
+            // Filter popover button — keeps dots out of the header
+            Button {
+                showFilterPopover.toggle()
+            } label: {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .popover(isPresented: $showFilterPopover) {
+                calendarFilterContent()
+                    .presentationCompactAdaptation(.popover)
+            }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 
-    private var calendarFilterButtons: some View {
-        HStack(spacing: 8) {
-            // Internal categories
-            ForEach(categories.prefix(5)) { cat in
-                Circle()
-                    .fill(cat.color)
-                    .frame(width: 28, height: 28)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
-                    )
-                    .accessibilityLabel("Kategori: \(cat.name)")
-            }
-
-            // External Apple calendars (up to 5 total combined)
-            let remainingSlots = max(0, 5 - categories.count)
-            if ekManager.isAuthorized {
-                ForEach(ekManager.ekCalendars.prefix(remainingSlots), id: \.calendarIdentifier) { cal in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            ekManager.toggleCalendar(cal.calendarIdentifier)
-                        }
-                    } label: {
-                        Circle()
-                            .fill(Color(cgColor: cal.cgColor))
-                            .frame(width: 28, height: 28)
-                            .opacity(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? 1.0 : 0.25)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(cal.title): \(ekManager.isCalendarEnabled(cal.calendarIdentifier) ? "aktiv" : "deaktiveret")")
-                }
-            }
-        }
+    private func calendarFilterContent() -> some View {
+        CalendarFilterPopover(
+            categories: Array(categories.prefix(8)),
+            ekManager: ekManager
+        )
     }
 
     // MARK: - Weekday Header
@@ -189,19 +175,19 @@ struct MonthView: View {
     private var weekdayHeader: some View {
         HStack(spacing: 0) {
             Text("Uge")
-                .font(.caption2)
+                .font(.system(size: 8))
                 .foregroundStyle(.tertiary)
-                .frame(width: 30)
+                .frame(width: 22)
 
             ForEach(weekdays, id: \.self) { day in
                 Text(day)
-                    .font(.caption.weight(.medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(day == "Lør" || day == "Søn" ? .secondary : .primary)
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.bottom, 4)
+        .padding(.horizontal, 2)
+        .padding(.bottom, 2)
     }
 
     // MARK: - Month Grid
@@ -211,15 +197,17 @@ struct MonthView: View {
         let weeks = stride(from: 0, to: gridDates.count, by: 7).map {
             Array(gridDates[$0..<min($0 + 7, gridDates.count)])
         }
+        // Adaptive: more events visible when fewer weeks
+        let maxEvents = weeks.count <= 5 ? 4 : 3
 
-        return VStack(spacing: 1) {
+        return VStack(spacing: 0) {
             ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                 let weekContainsToday = week.contains { $0.isToday }
                 HStack(spacing: 0) {
                     Text("\(week.first?.weekNumber ?? 0)")
-                        .font(.caption2)
+                        .font(.system(size: 9).monospacedDigit())
                         .foregroundStyle(.tertiary)
-                        .frame(width: 30)
+                        .frame(width: 22)
 
                     ForEach(week, id: \.self) { date in
                         let cachedEvents = eventsByDate[date.dateCacheKey] ?? []
@@ -234,8 +222,8 @@ struct MonthView: View {
                             displayEvents: cachedEvents,
                             dayCellMode: dayCellMode,
                             showHeatmap: showHeatmap,
-                            // Show events from prev/next months too
-                            showEventsOutsideMonth: true
+                            showEventsOutsideMonth: true,
+                            maxVisibleEvents: maxEvents
                         )
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
@@ -262,10 +250,10 @@ struct MonthView: View {
                         ? Color.pink.opacity(0.06)
                         : Color.clear
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .clipShape(RoundedRectangle(cornerRadius: 3))
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 2)
     }
 
     // MARK: - Day Zoom Overlay
@@ -474,6 +462,61 @@ struct MonthView: View {
         if let newMonth = Calendar.current.date(byAdding: .month, value: value, to: currentMonth) {
             currentMonth = newMonth
         }
+    }
+}
+
+// MARK: - Calendar Filter Popover
+
+struct CalendarFilterPopover: View {
+    let categories: [CalendarCategory]
+    @Bindable var ekManager: EventKitManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Kalendere")
+                .font(.subheadline.weight(.semibold))
+
+            ForEach(categories) { cat in
+                HStack(spacing: 8) {
+                    Circle().fill(cat.color).frame(width: 12, height: 12)
+                    Text(cat.name).font(.subheadline)
+                    Spacer()
+                }
+            }
+
+            if ekManager.isAuthorized {
+                ForEach(ekManager.ekCalendars, id: \.calendarIdentifier) { cal in
+                    calendarRow(cal)
+                }
+            }
+        }
+        .padding()
+        .frame(minWidth: 200)
+    }
+
+    private func calendarRow(_ cal: EKCalendar) -> some View {
+        let calId = cal.calendarIdentifier
+        let enabled = ekManager.isCalendarEnabled(calId)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                ekManager.toggleCalendar(calId)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color(cgColor: cal.cgColor))
+                    .frame(width: 12, height: 12)
+                Text(cal.title).font(.subheadline)
+                Spacer()
+                if enabled {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -11,6 +11,7 @@ struct MonthDayCell: View {
     var dayCellMode: String = "titles"
     var showHeatmap: Bool = true
     var showEventsOutsideMonth: Bool = false
+    var maxVisibleEvents: Int = 3
 
     private var allDisplayEvents: [DisplayEvent] {
         if !displayEvents.isEmpty { return displayEvents }
@@ -18,21 +19,24 @@ struct MonthDayCell: View {
     }
 
     var body: some View {
-        VStack(spacing: 1) {
-            // Day number
-            Text("\(date.dayOfMonth)")
-                .font(.system(size: 14, weight: isToday ? .bold : .medium))
-                .foregroundStyle(dayNumberColor)
-                .frame(width: 26, height: 26)
-                .background {
-                    if isToday {
-                        Circle().fill(Color.accentColor)
-                    } else if isSelected {
-                        Circle().strokeBorder(Color.accentColor, lineWidth: 1.5)
+        VStack(alignment: .leading, spacing: 0) {
+            // Day number — compact 20pt circle, left-aligned
+            HStack(spacing: 0) {
+                Text("\(date.dayOfMonth)")
+                    .font(.system(size: 11, weight: isToday ? .bold : .medium))
+                    .foregroundStyle(dayNumberColor)
+                    .frame(width: 20, height: 20)
+                    .background {
+                        if isToday {
+                            Circle().fill(Color.accentColor)
+                        } else if isSelected {
+                            Circle().strokeBorder(Color.accentColor, lineWidth: 1)
+                        }
                     }
-                }
+                Spacer(minLength: 0)
+            }
 
-            // Event indicators — show for all days (including prev/next month)
+            // Event indicators
             if !allDisplayEvents.isEmpty && (isCurrentMonth || showEventsOutsideMonth) {
                 eventIndicators
                     .opacity(isCurrentMonth ? 1.0 : 0.4)
@@ -42,9 +46,10 @@ struct MonthDayCell: View {
         }
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity)
-        .padding(.vertical, 2)
+        .padding(.vertical, 1)
+        .padding(.horizontal, 1)
         .background(cellBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .clipShape(RoundedRectangle(cornerRadius: 3))
     }
 
     // MARK: - Day Number Color
@@ -102,14 +107,14 @@ struct MonthDayCell: View {
 
     // Mode: Colored dots only
     private var dotsMode: some View {
-        HStack(spacing: 2) {
-            ForEach(allDisplayEvents.prefix(5)) { event in
+        HStack(spacing: 1.5) {
+            ForEach(allDisplayEvents.prefix(6)) { event in
                 Circle()
                     .fill(event.color)
-                    .frame(width: 4, height: 4)
+                    .frame(width: 3.5, height: 3.5)
             }
-            if allDisplayEvents.count > 5 {
-                Text("+\(allDisplayEvents.count - 5)")
+            if allDisplayEvents.count > 6 {
+                Text("+\(allDisplayEvents.count - 6)")
                     .font(.system(size: 5))
                     .foregroundStyle(.secondary)
             }
@@ -118,42 +123,56 @@ struct MonthDayCell: View {
 
     // Mode: Colored bars
     private var barsMode: some View {
-        VStack(spacing: 1) {
-            ForEach(allDisplayEvents.prefix(4)) { event in
-                RoundedRectangle(cornerRadius: 1)
+        VStack(spacing: 0.5) {
+            ForEach(allDisplayEvents.prefix(maxVisibleEvents)) { event in
+                RoundedRectangle(cornerRadius: 0.5)
                     .fill(event.color)
-                    .frame(height: 3)
+                    .frame(height: 2.5)
             }
-            if allDisplayEvents.count > 4 {
-                Text("+\(allDisplayEvents.count - 4)")
+            if allDisplayEvents.count > maxVisibleEvents {
+                Text("+\(allDisplayEvents.count - maxVisibleEvents)")
                     .font(.system(size: 5))
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 2)
+        .padding(.horizontal, 1)
     }
 
-    // Mode: Event titles with dots
+    // Mode: Time + title with colored left edge
     private var titlesMode: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(allDisplayEvents.prefix(3)) { event in
-                HStack(spacing: 2) {
-                    Circle()
+            ForEach(allDisplayEvents.prefix(maxVisibleEvents)) { event in
+                HStack(spacing: 0) {
+                    // Colored left edge instead of dot — saves ~5pt width
+                    RoundedRectangle(cornerRadius: 0.5)
                         .fill(event.color)
-                        .frame(width: 4, height: 4)
-                    Text(event.title)
+                        .frame(width: 2, height: 9)
+
+                    // Time prefix (HH) + title
+                    Text(eventLabel(event))
                         .font(.system(size: 7))
                         .lineLimit(1)
                         .foregroundStyle(.primary.opacity(0.7))
+                        .padding(.leading, 1)
                 }
             }
-            if allDisplayEvents.count > 3 {
-                Text("+\(allDisplayEvents.count - 3)")
+            if allDisplayEvents.count > maxVisibleEvents {
+                Text("+\(allDisplayEvents.count - maxVisibleEvents)")
                     .font(.system(size: 6))
                     .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 2)
+        .padding(.horizontal, 1)
+    }
+
+    private func eventLabel(_ event: DisplayEvent) -> String {
+        if event.isAllDay {
+            return event.title
+        }
+        let hour = Calendar.current.component(.hour, from: event.startDate)
+        let min = Calendar.current.component(.minute, from: event.startDate)
+        let timeStr = min == 0 ? "\(hour)" : String(format: "%d:%02d", hour, min)
+        return "\(timeStr) \(event.title)"
     }
 }
