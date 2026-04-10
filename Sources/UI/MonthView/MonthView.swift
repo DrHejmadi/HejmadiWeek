@@ -48,15 +48,20 @@ struct MonthView: View {
                 VStack(spacing: 0) {
                     monthHeader
                         .padding(.top, 4)
+                    miniHeatmapBar
                     weekdayHeader
                     monthGrid
                         .frame(maxHeight: .infinity)
-                    Spacer(minLength: 0)
+
+                    // Day peek panel — shows selected day's events below grid
+                    if let sel = selectedDate, zoomedDate == nil {
+                        dayPeekPanel(for: sel)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
                 .gesture(
                     DragGesture(minimumDistance: 50)
                         .onEnded { value in
-                            // Horizontal swipe = change month
                             if abs(value.translation.width) > abs(value.translation.height) {
                                 if value.translation.width < -50 {
                                     withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
@@ -64,7 +69,6 @@ struct MonthView: View {
                                     withAnimation(.spring(response: 0.4)) { advanceMonth(by: -1) }
                                 }
                             } else {
-                                // Vertical swipe = also change month
                                 if value.translation.height < -50 {
                                     withAnimation(.spring(response: 0.4)) { advanceMonth(by: 1) }
                                 } else if value.translation.height > 50 {
@@ -74,7 +78,7 @@ struct MonthView: View {
                         }
                 )
 
-                // Day zoom overlay (long-press / hover)
+                // Day zoom overlay (long-press)
                 if let zDate = zoomedDate {
                     dayZoomOverlay(for: zDate, screenHeight: geo.size.height)
                 }
@@ -170,6 +174,25 @@ struct MonthView: View {
         )
     }
 
+    // MARK: - Mini Heatmap Bar
+
+    private var miniHeatmapBar: some View {
+        let today = Date()
+        let weekStart = today.startOfWeek
+        let days = (0..<7).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: weekStart) }
+
+        return HStack(spacing: 2) {
+            ForEach(days, id: \.self) { day in
+                let count = (eventsByDate[day.dateCacheKey] ?? []).count
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(count == 0 ? Color.secondary.opacity(0.1) : Color.accentColor.opacity(min(Double(count) * 0.15, 0.8)))
+                    .frame(height: 4)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 2)
+    }
+
     // MARK: - Weekday Header
 
     private var weekdayHeader: some View {
@@ -206,8 +229,14 @@ struct MonthView: View {
                 HStack(spacing: 0) {
                     Text("\(week.first?.weekNumber ?? 0)")
                         .font(.system(size: 9).monospacedDigit())
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Color.accentColor.opacity(0.6))
                         .frame(width: 22)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if let weekDate = week.first {
+                                onSwitchToWeek?(weekDate)
+                            }
+                        }
 
                     ForEach(week, id: \.self) { date in
                         let cachedEvents = eventsByDate[date.dateCacheKey] ?? []
@@ -454,6 +483,80 @@ struct MonthView: View {
         .background(Color.primary.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Day Peek Panel (below grid)
+
+    private func dayPeekPanel(for date: Date) -> some View {
+        let dayEvents = eventsByDate[date.dateCacheKey] ?? []
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "da_DK")
+        formatter.dateFormat = "EEEE d. MMM"
+
+        return VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 6) {
+                Text(formatter.string(from: date).capitalized)
+                    .font(.caption.weight(.semibold))
+                Text("\(dayEvents.count) begivenheder")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    selectedDate = date
+                    showEventEditor = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.caption)
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 4)
+
+            if dayEvents.isEmpty {
+                Text("Ingen begivenheder")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.vertical, 6)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(dayEvents) { event in
+                            peekEventChip(event: event)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .background(.ultraThinMaterial)
+    }
+
+    private func peekEventChip(event: DisplayEvent) -> some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 1)
+                .fill(event.color)
+                .frame(width: 3, height: 20)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(event.title)
+                    .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                Text(event.isAllDay ? "Hel dag" : event.startDate.timeString)
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(event.color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .onTapGesture {
+            if let source = event.sourceEvent {
+                editingEvent = source
+            }
+        }
     }
 
     // MARK: - Helpers

@@ -211,24 +211,73 @@ struct EventEditorView: View {
 
     private func parseNaturalLanguage() {
         let input = nlInput.lowercased()
-        title = nlInput
+        var remaining = nlInput
+        var parsedDate = startDate
 
+        // Parse relative days: "i morgen", "i overmorgen", "i dag"
+        if input.contains("i overmorgen") {
+            parsedDate = Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? parsedDate
+            remaining = remaining.replacingOccurrences(of: "i overmorgen", with: "", options: .caseInsensitive)
+        } else if input.contains("i morgen") {
+            parsedDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? parsedDate
+            remaining = remaining.replacingOccurrences(of: "i morgen", with: "", options: .caseInsensitive)
+        } else if input.contains("i dag") {
+            parsedDate = Date()
+            remaining = remaining.replacingOccurrences(of: "i dag", with: "", options: .caseInsensitive)
+        }
+
+        // Parse Danish weekday names → next occurrence
+        let weekdayMap: [(String, Int)] = [
+            ("søndag", 1), ("mandag", 2), ("tirsdag", 3), ("onsdag", 4),
+            ("torsdag", 5), ("fredag", 6), ("lørdag", 7)
+        ]
+        for (name, weekday) in weekdayMap {
+            if input.contains(name) {
+                parsedDate = nextDate(weekday: weekday, from: Date())
+                remaining = remaining.replacingOccurrences(of: name, with: "", options: .caseInsensitive)
+                break
+            }
+        }
+
+        // Parse time: "kl 14", "kl. 9:30", "kl 14-16"
+        let timeRangePattern = /kl\.?\s*(\d{1,2})[:\.]?(\d{2})?\s*[-–]\s*(\d{1,2})[:\.]?(\d{2})?/
         let timePattern = /kl\.?\s*(\d{1,2})[:\.]?(\d{2})?/
-        if let match = input.firstMatch(of: timePattern) {
+
+        if let match = input.firstMatch(of: timeRangePattern) {
+            let startHour = Int(match.1) ?? 9
+            let startMin = Int(match.2 ?? "0") ?? 0
+            let endHour = Int(match.3) ?? (startHour + 1)
+            let endMin = Int(match.4 ?? "0") ?? 0
+            if let s = Calendar.current.date(bySettingHour: startHour, minute: startMin, second: 0, of: parsedDate),
+               let e = Calendar.current.date(bySettingHour: endHour, minute: endMin, second: 0, of: parsedDate) {
+                startDate = s
+                endDate = e
+            }
+            remaining = remaining.replacing(timeRangePattern, with: { _ in "" })
+        } else if let match = input.firstMatch(of: timePattern) {
             let hour = Int(match.1) ?? 12
             let minute = Int(match.2 ?? "0") ?? 0
-            if let date = Calendar.current.date(
-                bySettingHour: hour,
-                minute: minute,
-                second: 0,
-                of: startDate
-            ) {
+            if let date = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: parsedDate) {
                 startDate = date
                 endDate = Calendar.current.date(byAdding: .hour, value: 1, to: date) ?? date
             }
-            title = nlInput.replacing(timePattern, with: { _ in "" }).trimmingCharacters(in: .whitespaces)
+            remaining = remaining.replacing(timePattern, with: { _ in "" })
+        } else {
+            // No time specified — keep date change only
+            startDate = parsedDate
+            endDate = Calendar.current.date(byAdding: .hour, value: 1, to: parsedDate) ?? parsedDate
         }
 
+        title = remaining.trimmingCharacters(in: .whitespacesAndNewlines)
+        if title.isEmpty { title = nlInput }
         nlInput = ""
+    }
+
+    private func nextDate(weekday: Int, from date: Date) -> Date {
+        let cal = Calendar.current
+        let current = cal.component(.weekday, from: date)
+        var daysAhead = weekday - current
+        if daysAhead <= 0 { daysAhead += 7 }
+        return cal.date(byAdding: .day, value: daysAhead, to: date) ?? date
     }
 }

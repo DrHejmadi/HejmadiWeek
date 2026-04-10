@@ -13,7 +13,8 @@ struct WeekView: View {
     @State private var showPeek = false
     var ekManager: EventKitManager = .shared
 
-    private let hours = Array(0...23)
+    @State private var showFullDay = false
+    private let coreHoursRange = 7...21
     private let hourHeight: CGFloat = 60
 
     var body: some View {
@@ -30,7 +31,9 @@ struct WeekView: View {
                             .id("timeGrid")
                     }
                     .onAppear {
-                        proxy.scrollTo(7, anchor: .top)
+                        if showFullDay {
+                            proxy.scrollTo(7, anchor: .top)
+                        }
                     }
                 }
             }
@@ -232,46 +235,91 @@ struct WeekView: View {
 
     // MARK: - Time Grid
 
-    private var timeGrid: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(spacing: 0) {
-                ForEach(hours, id: \.self) { hour in
-                    HStack(alignment: .top, spacing: 0) {
-                        Text(String(format: "%02d:00", hour))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .trailing)
-                            .padding(.trailing, 4)
+    private var visibleHours: [Int] {
+        if showFullDay { return Array(0...23) }
+        return Array(coreHoursRange)
+    }
 
-                        Rectangle()
-                            .fill(Color.secondary.opacity(0.2))
-                            .frame(height: 0.5)
-                            .frame(maxWidth: .infinity)
+    private var timeGrid: some View {
+        VStack(spacing: 0) {
+            // Collapsed early hours indicator
+            if !showFullDay {
+                Button {
+                    withAnimation(.spring(response: 0.3)) { showFullDay = true }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8))
+                        Text("00–06")
+                            .font(.system(size: 9))
                     }
-                    .frame(height: hourHeight)
-                    .id(hour)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.04))
+                }
+                .buttonStyle(.plain)
+            }
+
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 0) {
+                    ForEach(visibleHours, id: \.self) { hour in
+                        HStack(alignment: .top, spacing: 0) {
+                            Text(String(format: "%02d:00", hour))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 44, alignment: .trailing)
+                                .padding(.trailing, 4)
+
+                            Rectangle()
+                                .fill(Color.secondary.opacity(0.2))
+                                .frame(height: 0.5)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .frame(height: hourHeight)
+                        .id(hour)
+                    }
+                }
+
+                HStack(spacing: 1) {
+                    Spacer()
+                        .frame(width: 48)
+
+                    ForEach(weekDates, id: \.self) { date in
+                        ZStack(alignment: .top) {
+                            Color.clear
+
+                            ForEach(displayEventsFor(date: date).filter({ !$0.isAllDay })) { event in
+                                weekEventBlock(event: event)
+                                    .onTapGesture {
+                                        if let source = event.sourceEvent {
+                                            editingEvent = source
+                                        }
+                                    }
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
                 }
             }
 
-            HStack(spacing: 1) {
-                Spacer()
-                    .frame(width: 48)
-
-                ForEach(weekDates, id: \.self) { date in
-                    ZStack(alignment: .top) {
-                        Color.clear
-
-                        ForEach(displayEventsFor(date: date).filter({ !$0.isAllDay })) { event in
-                            weekEventBlock(event: event)
-                                .onTapGesture {
-                                    if let source = event.sourceEvent {
-                                        editingEvent = source
-                                    }
-                                }
-                        }
+            // Collapsed late hours indicator
+            if !showFullDay {
+                Button {
+                    withAnimation(.spring(response: 0.3)) { showFullDay = true }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 8))
+                        Text("22–23")
+                            .font(.system(size: 9))
                     }
+                    .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.04))
                 }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -279,7 +327,8 @@ struct WeekView: View {
     private func weekEventBlock(event: DisplayEvent) -> some View {
         let startHour = Calendar.current.component(.hour, from: event.startDate)
         let startMinute = Calendar.current.component(.minute, from: event.startDate)
-        let topOffset = CGFloat(startHour) * hourHeight + CGFloat(startMinute)
+        let firstVisibleHour = showFullDay ? 0 : coreHoursRange.lowerBound
+        let topOffset = CGFloat(startHour - firstVisibleHour) * hourHeight + CGFloat(startMinute)
         let height = max(CGFloat(event.durationMinutes), 20)
 
         return VStack(alignment: .leading, spacing: 1) {

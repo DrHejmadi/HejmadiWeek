@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 enum AppTab: String, CaseIterable {
     case month = "Måned"
@@ -22,6 +23,7 @@ struct ContentView: View {
     @State private var selectedTab: AppTab = .month
     @State private var navigationPath = NavigationPath()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Query(filter: #Predicate<TodoItem> { !$0.isCompleted }) private var incompleteTodos: [TodoItem]
 
     var body: some View {
         #if os(macOS)
@@ -66,6 +68,7 @@ struct ContentView: View {
                 }
                 .tabItem { Label("To-Do", systemImage: "checklist") }
                 .tag(AppTab.todo)
+                .badge(incompleteTodos.count)
 
                 NavigationStack {
                     SettingsView()
